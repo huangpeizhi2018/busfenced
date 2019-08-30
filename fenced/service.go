@@ -17,8 +17,8 @@ import (
 type FenceType string
 
 const (
-	ENTER = FenceType("enter")
-	EXIT  = FenceType("exit")
+	ENTER = FenceType("enter") //进站事件
+	EXIT  = FenceType("exit")  //出站事件
 )
 
 type Server struct {
@@ -68,24 +68,24 @@ func NewServer(c *Conf) (*Server, error) {
 	}
 
 	enterExpirationCallback := func(key string, value interface{}) {
-		s.log.Info("enter hook invalid time trigger", zap.String(key, value.(*Dispatch).Json()))
+		s.log.Info("dispatch information expires, cleaning enter fenced HOOKS", zap.String(key, value.(*Dispatch).Json()))
 
 		conn := s.enter.Get()
 		defer conn.Close()
 
 		if _, err := conn.Do("DELHOOK", key); err != nil {
-			s.log.Info("enter hook invalid time trigger, DELHOOK error", zap.Error(err))
+			s.log.Info("cleaning enter fenced HOOKS, DELHOOK error", zap.Error(err))
 		}
 	}
 
 	exitExpirationCallback := func(key string, value interface{}) {
-		s.log.Info("exit hook invalid time trigger", zap.String(key, value.(*Dispatch).Json()))
+		s.log.Info("dispatch information expires, cleaning exit fenced HOOKS", zap.String(key, value.(*Dispatch).Json()))
 
 		conn := s.exit.Get()
 		defer conn.Close()
 
 		if _, err := conn.Do("DELHOOK", key); err != nil {
-			s.log.Info("exit hook invalid time trigger, DELHOOK error", zap.Error(err))
+			s.log.Info("cleaning exit fenced HOOKS, DELHOOK error", zap.Error(err))
 		}
 	}
 

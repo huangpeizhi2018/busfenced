@@ -9,3 +9,4 @@ func (s *Server) checkGPS(lat float64, lon float64, valid bool) bool {
 func (s *Server) checkMeter(enter float64, exit float64) bool {
 	return true
 }
+

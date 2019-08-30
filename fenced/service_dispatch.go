@@ -17,23 +17,23 @@ func (s *Server) fetchDispatch() error {
 	defer conn.Close()
 
 	for {
-		arr, err := redis.Strings(conn.Do("BRPOP", s.cf.Source.DispatchPoint, 0))
+		bp, err := redis.Strings(conn.Do("BRPOP", s.cf.Source.DispatchPoint, 0))
 		if err != nil {
-			return fmt.Errorf("fetchDispatch BRPOP error, %s", err)
+			return fmt.Errorf("fetchDispatch BRPOP, %s", err)
 		}
 
 		incr, err := redis.Int64(conn.Do("INCR", s.cf.Source.DispatchTouch))
 		if err != nil {
-			s.log.Warn("fetchDispatch INCR", zap.Error(err), zap.Int64("incr", incr), zap.String("touch", s.cf.Source.DispatchTouch))
+			s.log.Warn("fetchDispatch INCR", zap.Int64("incr", incr), zap.String("touch", s.cf.Source.DispatchTouch), zap.Error(err))
 		}
 
-		jstr := arr[1]
+		jstr := bp[1]
 		lat := gjson.Get(jstr, "lat").Float()
 		lon := gjson.Get(jstr, "lon").Float()
 
 		//抛弃经/纬度可能出错的记录
 		if !s.checkGPS(lat, lon, true) {
-			s.log.Info("fetchDispatch checkGPS failure", zap.String("dispatch", jstr))
+			s.log.Info("fetchDispatch checkGPS failure, discard this dispatch message", zap.String("dispatch", jstr))
 			continue
 		}
 
@@ -41,7 +41,7 @@ func (s *Server) fetchDispatch() error {
 		exit := gjson.Get(jstr, "exitMeter").Float()
 		//检查米数是否符合要求
 		if !s.checkMeter(enter, exit) {
-			s.log.Info("fetchDispatch checkMeter failure", zap.String("dispatch", jstr))
+			s.log.Info("fetchDispatch checkMeter failure, discard this dispatch message", zap.String("dispatch", jstr))
 			continue
 		}
 
@@ -58,13 +58,13 @@ func (s *Server) fetchDispatch() error {
 		it := gjson.Get(jstr, "invalidTime").String()
 		t, err := time.ParseInLocation(time.RFC3339, it, time.Local)
 		if err != nil {
-			s.log.Warn("fetchDispatch parse invalidTime error", zap.Error(err), zap.String("dispatch", jstr))
+			s.log.Warn("fetchDispatch parse invalidTime failure, discard this dispatch message", zap.Error(err), zap.String("dispatch", jstr))
 			continue
 		}
 
 		//抛弃超时或延迟消息
 		if t.Before(time.Now()) {
-			s.log.Info("fetchDispatch invalidTime before now", zap.String("dispatch", jstr))
+			s.log.Info("fetchDispatch invalidTime before now, discard this dispatch message", zap.String("dispatch", jstr))
 			continue
 		}
 
@@ -101,7 +101,7 @@ func (s *Server) updateDispatch() error {
 
 			key := i.Obuid + ":" + i.TaskId
 			//进围栏事件触发
-			s.log.Info("updateDispatch SETHOOK enter", zap.String("hook", enterHook))
+			s.log.Info("updateDispatch SETHOOK enter fenced", zap.String("hook", enterHook))
 			if _, err := enter.Do("SETHOOK",
 				key,
 				s.cf.EnterFenced.PubPoint,
@@ -111,7 +111,7 @@ func (s *Server) updateDispatch() error {
 			s.enterCache.SetWithTTL(key, i, i.InvalidTime.Sub(time.Now()))
 
 			//出围栏事件触发
-			s.log.Info("updateDispatch SETHOOK exit", zap.String("hook", exitHook))
+			s.log.Info("updateDispatch SETHOOK exit fenced", zap.String("hook", exitHook))
 			if _, err := exit.Do("SETHOOK",
 				key,
 				s.cf.ExitFenced.PubPoint,

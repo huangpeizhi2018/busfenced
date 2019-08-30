@@ -22,6 +22,11 @@ func main() {
 	}
 	log.Info("runcmd", zap.String("prog", os.Args[0]), zap.String("confn", confn))
 
+	if b := checkFileExist(confn); !b {
+		log.Info("busfenced check config file not exist", zap.String("confn", confn))
+		return
+	}
+
 	var err error
 
 	//加载分析配置文件
@@ -51,6 +56,15 @@ func main() {
 		log.Warn("busfenced service run", zap.Error(err))
 		return
 	}
+}
+
+//检查文件是否存在
+func checkFileExist(filename string) bool {
+	exist := true
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		exist = false
+	}
+	return exist
 }
 
 func init() {

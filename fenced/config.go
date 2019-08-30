@@ -88,7 +88,13 @@ func NewCf(filename string) (*Conf, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+
+	defer func() {
+		if f != nil {
+			_ = f.Close()
+
+		}
+	}()
 
 	bs, err := ioutil.ReadAll(f)
 	if err != nil {
