@@ -1,0 +1,27 @@
+# github.com/ReneKroon/ttlcache v1.5.0
+github.com/ReneKroon/ttlcache
+# github.com/gomodule/redigo v1.7.0
+github.com/gomodule/redigo/redis
+# github.com/influxdata/pidfile v0.0.0-20171020183418-16df69ba8e75
+github.com/influxdata/pidfile
+# github.com/tidwall/gjson v1.3.2
+github.com/tidwall/gjson
+# github.com/tidwall/match v1.0.1
+github.com/tidwall/match
+# github.com/tidwall/pretty v1.0.0
+github.com/tidwall/pretty
+# github.com/tidwall/sjson v1.0.4
+github.com/tidwall/sjson
+# go.uber.org/atomic v1.4.0
+go.uber.org/atomic
+# go.uber.org/multierr v1.1.0
+go.uber.org/multierr
+# go.uber.org/zap v1.10.0
+go.uber.org/zap
+go.uber.org/zap/internal/bufferpool
+go.uber.org/zap/zapcore
+go.uber.org/zap/buffer
+go.uber.org/zap/internal/color
+go.uber.org/zap/internal/exit
+# gopkg.in/yaml.v2 v2.2.2
+gopkg.in/yaml.v2

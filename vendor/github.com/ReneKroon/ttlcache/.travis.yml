@@ -1,0 +1,19 @@
+language: go
+
+go:
+  - 1.12
+  - 1.11
+git:
+  depth: 1
+
+install:
+  - go install -race std
+  - go get golang.org/x/tools/cmd/cover
+  - go get golang.org/x/lint/golint
+  - export PATH=$HOME/gopath/bin:$PATH
+
+script:
+  - golint .
+  - go test ./... -race -count=1 -timeout=1m -run .
+  - go test -cover ./...
+  - go test -run=Bench.* -bench=. -benchmem
