@@ -2,7 +2,7 @@
 
 ## 围栏分析架构
 <p align="center" style="text-align:center;">
-  <img src="./docs/fenced.jpg" width="500" />
+  <img src="https://github.com/huangpeizhi2018/busfenced/blob/master/docs/fenced.jpg" width="500" />
 </p>
 
 ## 运行目录结构
