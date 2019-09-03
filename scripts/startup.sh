@@ -6,5 +6,5 @@ nohup /opt/busfenced/bin/tile38-server -p 7876 -d /opt/busfenced/tile38/exitfenc
 # 启动Redis
 /usr/local/bin/redis-server /opt/redis/conf/redis_6390.conf
 # 启动公交围栏事件服务
-nohup /opt/busfenced/bin/busfenced /opt/busfenced/conf/busfenced.yaml &
+nohup /opt/busfenced/bin/busfenced /opt/busfenced/conf/busfenced.yaml >> /opt/busfenced/log/busfenced.log &
 

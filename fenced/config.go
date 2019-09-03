@@ -5,6 +5,8 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -12,6 +14,7 @@ import (
 
 //配置结构
 type Conf struct {
+	ConfigFile    string    `yaml:"-"`
 	Service       string    `yaml:"service"`
 	GpsTimeOffset float64   `yaml:"gpstimeoffset"`
 	ChanLen       int       `yaml:"chanlen"`
@@ -106,6 +109,12 @@ func NewCf(filename string) (*Conf, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	dir, err := filepath.Abs(f.Name())
+	if err != nil {
+		return nil, err
+	}
+	c.ConfigFile = filepath.Join(dir, filepath.FromSlash(path.Clean("/"+f.Name())))
 
 	return c, nil
 }

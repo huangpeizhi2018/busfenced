@@ -3,6 +3,7 @@ module github.com/huangpeizhi2018/busfenced
 go 1.12
 
 replace github.com/huangpeizhi2018/busfenced/fenced => ./fenced
+replace github.com/huangpeizhi2018/busfenced/fenced/version => ./fenced/version
 
 require (
 	github.com/ReneKroon/ttlcache v1.5.0

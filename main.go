@@ -20,7 +20,6 @@ func main() {
 	if le := len(args); le >= 1 {
 		confn = args[0]
 	}
-	log.Info("runcmd", zap.String("prog", os.Args[0]), zap.String("confn", confn))
 
 	if b := checkFileExist(confn); !b {
 		log.Info("busfenced check config file not exist", zap.String("confn", confn))
@@ -47,13 +46,13 @@ func main() {
 	//分析服务
 	server, err := fenced.NewServer(cf)
 	if err != nil {
-		log.Warn("busfenced service initialize", zap.Error(err))
+		log.Warn("busfenced server initialize", zap.Error(err))
 		return
 	}
 	defer server.Close()
 
-	if err := server.Run(); err != nil {
-		log.Warn("busfenced service run", zap.Error(err))
+	if err := fenced.Run(server); err != nil {
+		log.Warn("busfenced server run", zap.Error(err))
 		return
 	}
 }
@@ -64,6 +63,7 @@ func checkFileExist(filename string) bool {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		exist = false
 	}
+
 	return exist
 }
 
