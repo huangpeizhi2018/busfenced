@@ -43,6 +43,7 @@ r.lpush('queue.bus.gps',gps)
 ```   
 
 ### 进围栏事件
+- 原始围栏事件/任务ID
 ````
 {
     "command": "set", 
@@ -62,7 +63,11 @@ r.lpush('queue.bus.gps',gps)
     "task":{
         "id":"87654321",
     }
-}
+}·
+````
+
+- 围栏事件缩减
+````
 {
     "detect": "enter", 
     "key": "busgps", 
