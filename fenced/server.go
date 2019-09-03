@@ -2,6 +2,7 @@ package fenced
 
 import (
 	"fmt"
+	"github.com/tidwall/gjson"
 	"net"
 	"net/http"
 	"net/url"
@@ -322,6 +323,14 @@ func (s *Server) eventDump(ft FenceType) error {
 				tc := s.tp.Get()
 				defer tc.Close()
 
+				//触发事件不属于该车辆
+				hook := gjson.Get(jstr, "hook").String()
+				id := gjson.Get(jstr, "id").String()
+				if !strings.HasPrefix(hook, id) {
+					s.log.Info("eventDump event not match", zap.String("id", id), zap.String("hook", hook))
+					return nil
+				}
+
 				var err error
 				if ft == ENTER {
 					_, err = tc.Do("LPUSH", s.cf.Target.EnterPoint, jstr)
@@ -424,7 +433,7 @@ func (s *Server) Close() error {
 	if err := s.enter.Close(); err != nil {
 		errmsg = append(errmsg, err.Error())
 	}
-	
+
 	if err := s.exit.Close(); err != nil {
 		errmsg = append(errmsg, err.Error())
 	}
