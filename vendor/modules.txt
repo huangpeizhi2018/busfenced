@@ -4,6 +4,8 @@ github.com/ReneKroon/ttlcache
 github.com/gomodule/redigo/redis
 # github.com/influxdata/pidfile v0.0.0-20171020183418-16df69ba8e75
 github.com/influxdata/pidfile
+# github.com/paulmach/go.geojson v1.4.0
+github.com/paulmach/go.geojson
 # github.com/tidwall/gjson v1.3.2
 github.com/tidwall/gjson
 # github.com/tidwall/match v1.0.1

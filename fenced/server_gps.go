@@ -37,12 +37,13 @@ func (s *Server) fetchGPS() error {
 		}
 
 		m := GPS{
-			Obuid:  gjson.Get(jstr, "obuid").String(),
-			Lat:    lat,
-			Lon:    lon,
-			Height: gjson.Get(jstr, "height").Float(),
-			Speed:  gjson.Get(jstr, "speed").Float(),
-			Dir:    gjson.Get(jstr, "dir").Float(),
+			Obuid:     gjson.Get(jstr, "obuid").String(),
+			Lat:       lat,
+			Lon:       lon,
+			Height:    gjson.Get(jstr, "height").Float(),
+			Speed:     gjson.Get(jstr, "speed").Float(),
+			Dir:       gjson.Get(jstr, "dir").Float(),
+			FetchUnix: time.Now().Unix(),
 		}
 
 		//gpstime日期分析
@@ -64,6 +65,7 @@ func (s *Server) fetchGPS() error {
 		}
 
 		m.GPSTime = t
+		m.GPSUnix = t.Unix()
 		s.chanGPS <- &m //转入管道
 	}
 }
@@ -78,11 +80,19 @@ func (s *Server) updateGPS() error {
 
 	for {
 		for i := range s.chanGPS {
-			if _, err := enter.Do("SET", s.cf.EnterFenced.Collection, i.Obuid, "POINT", i.Lat, i.Lon); err != nil {
+			bs, err := s.mkGeojson("POINT", *i)
+			if err != nil {
+				s.log.Warn("updateGPS mkGeojson error", zap.Error(err), zap.String("gps", i.Json()))
+				continue
+			}
+
+			if _, err := enter.Do("SET", s.cf.EnterFenced.Collection, i.Obuid,
+				"OBJECT", string(bs)); err != nil {
 				s.log.Info("updateGPS SET enter fenced error", zap.Error(err), zap.String("gps", i.Json()))
 			}
 
-			if _, err := exit.Do("SET", s.cf.ExitFenced.Collection, i.Obuid, "POINT", i.Lat, i.Lon); err != nil {
+			if _, err := exit.Do("SET", s.cf.ExitFenced.Collection, i.Obuid,
+				"OBJECT", string(bs)); err != nil {
 				s.log.Info("updateGPS SET exit fenced error", zap.Error(err), zap.String("gps", i.Json()))
 			}
 		}

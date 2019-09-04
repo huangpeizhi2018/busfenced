@@ -3,6 +3,7 @@ package fenced
 import (
 	"fmt"
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 	"net"
 	"net/http"
 	"net/url"
@@ -331,7 +332,21 @@ func (s *Server) eventDump(ft FenceType) error {
 					return nil
 				}
 
+				hp := strings.Split(hook, ":")
+				if len(hp) != 2 {
+					s.log.Warn("eventDump event hook format incorrect", zap.String("hook", hook))
+					return nil
+				}
+
 				var err error
+
+				//补充关联的业务ID信息
+				jstr, err = sjson.Set(jstr, "task.id", hp[1])
+				if err != nil {
+					s.log.Warn("eventDump json set", zap.String("task.id", hp[1]), zap.String("jstr", jstr))
+					return nil
+				}
+
 				if ft == ENTER {
 					_, err = tc.Do("LPUSH", s.cf.Target.EnterPoint, jstr)
 

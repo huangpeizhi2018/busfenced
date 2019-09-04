@@ -31,6 +31,31 @@
 ```
 
 ## 测试
+### GPS源信息格式
+```ruby
+{
+    "speed": 0, 
+    "gpstime": "2019-09-04T08:55:35+08:00", 
+    "lon": 113.3263889, 
+    "lat": 23.1191667, 
+    "dir": 274, 
+    "obuid": "989854"
+}
+```
+
+### 调度源信息格式
+```ruby
+{
+    "obuId": "941184", 
+    "lat": 23.1152778, 
+    "lon": 113.2825, 
+    "enterMeter": 100, 
+    "exitMeter": 200, 
+    "taskId": "8", 
+    "invalidTime": "2019-09-03T16:55:00+08:00"
+}
+```
+
 ### ruby/redis操作示例
 ```ruby
 import 'redis'
@@ -46,42 +71,56 @@ r.lpush('queue.bus.gps',gps)
 - 原始围栏事件/任务ID
 ````
 {
+    "task": {
+        "id": "87654321"
+    }, 
     "command": "set", 
-    "group": "5d649c319e4ea40a9b122e3a", 
+    "group": "5d6f6ea39e4ea469b438e7c8", 
     "detect": "enter", 
     "hook": "123456:87654321", 
     "key": "busgps", 
-    "time": "2019-08-27T10:57:53.594628365+08:00", 
+    "time": "2019-09-04T15:58:27.411250342+08:00", 
     "id": "123456", 
     "object": {
-        "type": "Point", 
-        "coordinates": [
-            23.123456, 
-            113.123456
-        ]
-    },
-    "task":{
-        "id":"87654321",
+        "type": "Feature", 
+        "geometry": {
+            "type": "Point", 
+            "coordinates": [
+                23.123456, 
+                113.123456
+            ]
+        }, 
+        "properties": {
+            "fetchunix": 1567583907, 
+            "gpsunix": 1567413000
+        }
     }
-}·
+}
 ````
 
 - 围栏事件缩减
 ````
 {
+    "task": {
+        "id": "87654321"
+    }, 
     "detect": "enter", 
     "key": "busgps", 
-    "time": "2019-08-27 10:57:53", 
+    "time": "2019-09-04T15:58:27.411250342+08:00", 
     "id": "123456", 
     "object": {
-        "type": "Point", 
-        "coordinates": [
-            23.123456, 
-            113.123456
-        ]
-    },
-    "task":{
-        "id":"87654321",
+        "type": "Feature", 
+        "geometry": {
+            "type": "Point", 
+            "coordinates": [
+                23.123456, 
+                113.123456
+            ]
+        }, 
+        "properties": {
+            "fetchunix": 1567583907, 
+            "gpsunix": 1567413000
+        }
     }
 }
 ````
