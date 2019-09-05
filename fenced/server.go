@@ -353,6 +353,16 @@ func (s *Server) eventDump(ft FenceType) error {
 					if _, err := tc.Do("INCR", s.cf.Target.EnterTouch); err != nil {
 						s.log.Warn("EventDump INCR", zap.String("FenceType", string(ft)), zap.Error(err))
 					}
+
+					//即时清理
+					if s.cf.EnterFenced.DeleteNow {
+						func() {
+							conn := s.enter.Get()
+							defer conn.Close()
+
+							_, _ = conn.Do("DELHOOK", hook)
+						}()
+					}
 				}
 
 				if ft == EXIT {
@@ -361,6 +371,17 @@ func (s *Server) eventDump(ft FenceType) error {
 					if _, err := tc.Do("INCR", s.cf.Target.ExitTouch); err != nil {
 						s.log.Warn("EventDump INCR", zap.String("FenceType", string(ft)), zap.Error(err))
 					}
+
+					//即时清理
+					if s.cf.ExitFenced.DeleteNow {
+						func() {
+							conn := s.exit.Get()
+							defer conn.Close()
+
+							_, _ = conn.Do("DELHOOK", hook)
+						}()
+					}
+
 				}
 
 				if err != nil {

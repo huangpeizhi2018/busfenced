@@ -61,6 +61,7 @@ type Fenced struct {
 	Port       string `yaml:"port"`
 	Collection string `yaml:"collection"`
 	PubPoint   string `yaml:"pubpoint"`
+	DeleteNow  bool   `yaml:"deletenow"`
 }
 
 //AOFSHRINK服务
