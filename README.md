@@ -58,7 +58,7 @@
 
 ### ruby/redis操作示例
 ```ruby
-import 'redis'
+require 'redis'
 r = Redis.new(:host=>'10.88.100.132', :port=>6390)
 dispatch = '{"obuId": "123456","lat": 113.123456,"lon": 23.123456,"enterMeter": 50,"exitMeter": 100,"taskId": "87654321","invalidTime": "2019-08-29T17:30:00+08:00"}'
 r.lpush('queue.bus.dispatch',dispatch)

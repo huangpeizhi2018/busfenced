@@ -1,7 +1,6 @@
 package fenced
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -19,7 +18,10 @@ func (s *Server) fetchDispatch() error {
 	for {
 		bp, err := redis.Strings(conn.Do("BRPOP", s.cf.Source.DispatchPoint, 0))
 		if err != nil {
-			return fmt.Errorf("fetchDispatch BRPOP, %s", err)
+			s.log.Warn("fetchDispatch BRPOP", zap.String("queue", s.cf.Source.DispatchPoint), zap.Error(err))
+			//5秒后重试
+			time.Sleep(5 * time.Second)
+			continue
 		}
 
 		incr, err := redis.Int64(conn.Do("INCR", s.cf.Source.DispatchTouch))
@@ -106,7 +108,8 @@ func (s *Server) updateDispatch() error {
 				key,
 				s.cf.EnterFenced.PubPoint,
 				"NEARBY", s.cf.EnterFenced.Collection, "FENCE", "DETECT", "enter", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.EnterMeter); err != nil {
-				s.log.Info("updateDispatch SETHOOK enter error", zap.Error(err), zap.String("hook", enterHook), zap.String("dispatch", i.Json()))
+				s.log.Warn("updateDispatch SETHOOK enter error", zap.Error(err), zap.String("hook", enterHook), zap.String("dispatch", i.Json()))
+				return err
 			}
 			s.enterCache.SetWithTTL(key, i, i.InvalidTime.Sub(time.Now()))
 
@@ -116,7 +119,8 @@ func (s *Server) updateDispatch() error {
 				key,
 				s.cf.ExitFenced.PubPoint,
 				"NEARBY", s.cf.EnterFenced.Collection, "FENCE", "DETECT", "exit", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.ExitMeter); err != nil {
-				s.log.Info("updateDispatch SETHOOK exit error", zap.Error(err), zap.String("hook", enterHook), zap.String("dispatch", i.Json()))
+				s.log.Warn("updateDispatch SETHOOK exit error", zap.Error(err), zap.String("hook", enterHook), zap.String("dispatch", i.Json()))
+				return err
 			}
 			s.exitCache.SetWithTTL(key, i, i.InvalidTime.Sub(time.Now()))
 		}

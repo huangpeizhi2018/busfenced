@@ -79,7 +79,8 @@ func NewServer(c *Conf) (*Server, error) {
 		defer conn.Close()
 
 		if _, err := conn.Do("DELHOOK", key); err != nil {
-			s.log.Info("cleaning enter fenced HOOKS, DELHOOK error", zap.Error(err))
+			s.log.Warn("cleaning enter fenced HOOKS, DELHOOK error", zap.Error(err))
+			//需关注，但不主动退出。
 		}
 	}
 
@@ -90,7 +91,8 @@ func NewServer(c *Conf) (*Server, error) {
 		defer conn.Close()
 
 		if _, err := conn.Do("DELHOOK", key); err != nil {
-			s.log.Info("cleaning exit fenced HOOKS, DELHOOK error", zap.Error(err))
+			s.log.Warn("cleaning exit fenced HOOKS, DELHOOK error", zap.Error(err))
+			//需关注，但不主动退出。
 		}
 	}
 

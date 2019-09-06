@@ -1,7 +1,6 @@
 package fenced
 
 import (
-	"fmt"
 	"math"
 	"time"
 
@@ -18,7 +17,10 @@ func (s *Server) fetchGPS() error {
 	for {
 		bp, err := redis.Strings(conn.Do("BRPOP", s.cf.Source.GPSPoint, 0))
 		if err != nil {
-			return fmt.Errorf("fetchGPS BRPOP, %s", err)
+			s.log.Warn("fetchGPS BRPOP", zap.String("queue", s.cf.Source.GPSPoint), zap.Error(err))
+			//5秒后重试
+			time.Sleep(5 * time.Second)
+			continue
 		}
 
 		incr, err := redis.Int64(conn.Do("INCR", s.cf.Source.GPSTouch))
@@ -88,12 +90,14 @@ func (s *Server) updateGPS() error {
 
 			if _, err := enter.Do("SET", s.cf.EnterFenced.Collection, i.Obuid,
 				"OBJECT", string(bs)); err != nil {
-				s.log.Info("updateGPS SET enter fenced error", zap.Error(err), zap.String("gps", i.Json()))
+				s.log.Warn("updateGPS SET enter fenced error", zap.Error(err), zap.String("gps", i.Json()))
+				return err
 			}
 
 			if _, err := exit.Do("SET", s.cf.ExitFenced.Collection, i.Obuid,
 				"OBJECT", string(bs)); err != nil {
-				s.log.Info("updateGPS SET exit fenced error", zap.Error(err), zap.String("gps", i.Json()))
+				s.log.Warn("updateGPS SET exit fenced error", zap.Error(err), zap.String("gps", i.Json()))
+				return err
 			}
 		}
 	}
