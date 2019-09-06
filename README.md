@@ -5,7 +5,16 @@
   <img src="https://github.com/huangpeizhi2018/busfenced/blob/master/docs/fenced.jpg" width="500" />
 </p>
 
-## 运行目录结构
+## 运行
+
+### 进程管理
+- 使用supervisor管理busfenced服务相关进程。
+```
+/opt/supervisor/bin/supervisord -c /opt/supervisor/conf/supervisord.conf -d
+```
+- [supervisord](https://github.com/ochinchina/supervisord)
+
+### 目录结构
 ```
 /opt/busfenced
 ├── bin
