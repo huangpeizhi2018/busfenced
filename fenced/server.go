@@ -330,13 +330,13 @@ func (s *Server) eventDump(ft FenceType) error {
 				hook := gjson.Get(jstr, "hook").String()
 				id := gjson.Get(jstr, "id").String()
 				if !strings.HasPrefix(hook, id) {
-					s.log.Info("eventDump event not match", zap.String("id", id), zap.String("hook", hook))
+					s.log.Info("eventDump event not match", zap.String("id", id), zap.String("hook", hook), zap.String("FenceType", string(ft)))
 					return nil
 				}
 
 				hp := strings.Split(hook, ":")
 				if len(hp) != 2 {
-					s.log.Warn("eventDump event hook format incorrect", zap.String("hook", hook))
+					s.log.Warn("eventDump event hook format incorrect", zap.String("hook", hook), zap.String("FenceType", string(ft)))
 					return nil
 				}
 
@@ -345,9 +345,11 @@ func (s *Server) eventDump(ft FenceType) error {
 				//补充关联的业务ID信息
 				jstr, err = sjson.Set(jstr, "task.id", hp[1])
 				if err != nil {
-					s.log.Warn("eventDump json set", zap.String("task.id", hp[1]), zap.String("jstr", jstr))
+					s.log.Warn("eventDump json set", zap.String("task.id", hp[1]), zap.String("jstr", jstr), zap.String("FenceType", string(ft)))
 					return nil
 				}
+
+				s.log.Info("event success", zap.String("jstr", jstr), zap.String("FenceType", string(ft)))
 
 				if ft == ENTER {
 					_, err = tc.Do("LPUSH", s.cf.Target.EnterPoint, jstr)
@@ -383,7 +385,6 @@ func (s *Server) eventDump(ft FenceType) error {
 							_, _ = conn.Do("DELHOOK", hook)
 						}()
 					}
-
 				}
 
 				if err != nil {

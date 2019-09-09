@@ -94,12 +94,12 @@ func (s *Server) updateDispatch() error {
 				[]string{"SETHOOK",
 					i.Obuid + ":" + i.TaskId,
 					s.cf.EnterFenced.PubPoint,
-					"NEARBY", s.cf.EnterFenced.Collection, "FENCE", "DETECT", "enter", "COMMANDS", "set", "POINT", lat, lon, enterM}, " ")
+					"NEARBY", s.cf.EnterFenced.Collection, "FENCE", "DETECT", "enter,exit", "COMMANDS", "set", "POINT", lat, lon, enterM}, " ")
 			exitHook := strings.Join(
 				[]string{"SETHOOK",
 					i.Obuid + ":" + i.TaskId,
 					s.cf.ExitFenced.PubPoint,
-					"NEARBY", s.cf.EnterFenced.Collection, "FENCE", "DETECT", "exit", "COMMANDS", "set", "POINT", lat, lon, exitM}, " ")
+					"NEARBY", s.cf.EnterFenced.Collection, "FENCE", "DETECT", "enter,exit", "COMMANDS", "set", "POINT", lat, lon, exitM}, " ")
 
 			key := i.Obuid + ":" + i.TaskId
 			//进围栏事件触发
@@ -107,7 +107,7 @@ func (s *Server) updateDispatch() error {
 			if _, err := enter.Do("SETHOOK",
 				key,
 				s.cf.EnterFenced.PubPoint,
-				"NEARBY", s.cf.EnterFenced.Collection, "FENCE", "DETECT", "enter", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.EnterMeter); err != nil {
+				"NEARBY", s.cf.EnterFenced.Collection, "FENCE", "DETECT", "enter,exit", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.EnterMeter); err != nil {
 				s.log.Warn("updateDispatch SETHOOK enter error", zap.Error(err), zap.String("hook", enterHook), zap.String("dispatch", i.Json()))
 				return err
 			}
@@ -118,7 +118,7 @@ func (s *Server) updateDispatch() error {
 			if _, err := exit.Do("SETHOOK",
 				key,
 				s.cf.ExitFenced.PubPoint,
-				"NEARBY", s.cf.EnterFenced.Collection, "FENCE", "DETECT", "exit", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.ExitMeter); err != nil {
+				"NEARBY", s.cf.ExitFenced.Collection, "FENCE", "DETECT", "enter,exit", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.ExitMeter); err != nil {
 				s.log.Warn("updateDispatch SETHOOK exit error", zap.Error(err), zap.String("hook", enterHook), zap.String("dispatch", i.Json()))
 				return err
 			}
