@@ -69,10 +69,13 @@
 ```ruby
 require 'redis'
 r = Redis.new(:host=>'10.88.100.132', :port=>6390)
-dispatch = '{"obuId": "123456","lat": 113.123456,"lon": 23.123456,"enterMeter": 50,"exitMeter": 100,"taskId": "87654321","invalidTime": "2019-08-29T17:30:00+08:00"}'
+# 围栏指令
+# SETHOOK 933526:1568048402031 redis://127.0.0.1:6390/pub-enterfenced NEARBY busgps FENCE DETECT enter,exit COMMANDS set POINT 23.145199 113.35396 200"}
+# SETHOOK 933526:1568048402031 redis://127.0.0.1:6390/pub-exitfenced NEARBY busgps FENCE DETECT enter,exit COMMANDS set POINT 23.145199 113.35396 200"}   
+dispatch = '{"obuId": "933526","lat": 23.145199,"lon": 113.35396,"enterMeter": 200,"exitMeter": 200,"taskId": "1568048402031","invalidTime": "2019-08-29T17:30:00+08:00"}'
 r.lpush('queue.bus.dispatch',dispatch)
-#GPS示例 
-gps = '{ "obuid": "123456", "lat": 113.123456, "lon": 23.123456, "gpstime": "2019-08-29T17:30:00+08:00"}'
+# GPS信息  
+gps = '{ "obuid": "933526", "lat": 23.1463889, "lon": 113.3525000, "gpstime": "2019-09-10T11:50:00+08:00"}'
 r.lpush('queue.bus.gps',gps)
 ```   
 

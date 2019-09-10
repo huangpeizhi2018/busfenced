@@ -3,6 +3,7 @@ package fenced
 import (
 	"fmt"
 	geojson "github.com/paulmach/go.geojson"
+	"strings"
 )
 
 //检查GPS坐标是否符合要求
@@ -32,4 +33,14 @@ func (s *Server) mkGeojson(ty string, i GPS) ([]byte, error) {
 	f.SetProperty("fetchunix", i.FetchUnix)
 
 	return f.MarshalJSON()
+}
+
+//HOOK格式， id:taskid
+func parseHook(h string)(id string, taskid string, valid bool) {
+    ph := strings.Split(h, ":")
+    if len(ph)!= 2 {
+    	return "", "", false
+	}
+
+    return ph[0], ph[1], true
 }
