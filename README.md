@@ -13,6 +13,10 @@
 /opt/supervisor/bin/supervisord -c /opt/supervisor/conf/supervisord.conf -d
 ```
 - [supervisord](https://github.com/ochinchina/supervisord)
+- 监控界面
+<p align="center" style="text-align:center;">
+  <img src="https://github.com/huangpeizhi2018/busfenced/blob/master/docs/go-supervisor.png" width="500" />
+</p>
 
 ### 目录结构
 ```
@@ -72,10 +76,14 @@ r = Redis.new(:host=>'10.88.100.132', :port=>6390)
 # 围栏指令
 # SETHOOK 933526:1568048402031 redis://127.0.0.1:6390/pub-enterfenced NEARBY busgps FENCE DETECT enter,exit COMMANDS set POINT 23.145199 113.35396 200"}
 # SETHOOK 933526:1568048402031 redis://127.0.0.1:6390/pub-exitfenced NEARBY busgps FENCE DETECT enter,exit COMMANDS set POINT 23.145199 113.35396 200"}   
-dispatch = '{"obuId": "933526","lat": 23.145199,"lon": 113.35396,"enterMeter": 200,"exitMeter": 200,"taskId": "1568048402031","invalidTime": "2019-08-29T17:30:00+08:00"}'
+dispatch = '{"obuId": "123456","lat": 23.145199,"lon": 113.35396,"enterMeter": 200,"exitMeter": 200,"taskId": "1234567890","invalidTime": "2019-09-11T17:30:00+08:00"}'
 r.lpush('queue.bus.dispatch',dispatch)
-# GPS信息  
-gps = '{ "obuid": "933526", "lat": 23.1463889, "lon": 113.3525000, "gpstime": "2019-09-10T11:50:00+08:00"}'
+# GPS信息 
+## 进入围栏
+gps = '{ "obuid": "123456", "lat": 23.1463889, "lon": 113.3525000, "gpstime": "2019-09-11T12:50:00+08:00"}'
+r.lpush('queue.bus.gps',gps)
+## 离开围栏
+gps = '{ "obuid": "123456", "lat": 23.146, "lon": 113.351, "gpstime": "2019-09-11T12:50:00+08:00"}'
 r.lpush('queue.bus.gps',gps)
 ```   
 
@@ -84,29 +92,30 @@ r.lpush('queue.bus.gps',gps)
 ````
 {
     "task": {
-        "id": "87654321"
+        "id": "1568048402031"
     }, 
     "command": "set", 
-    "group": "5d6f6ea39e4ea469b438e7c8", 
-    "detect": "enter", 
-    "hook": "123456:87654321", 
+    "group": "5d78672f9e4ea40df84f9ee9", 
+    "detect": "exit", 
+    "hook": "933526:1568048402031", 
     "key": "busgps", 
-    "time": "2019-09-04T15:58:27.411250342+08:00", 
-    "id": "123456", 
+    "time": "2019-09-11T11:17:03.46220216+08:00", 
+    "id": "933526", 
     "object": {
         "type": "Feature", 
         "geometry": {
             "type": "Point", 
             "coordinates": [
-                23.123456, 
-                113.123456
+                0, 
+                0
             ]
         }, 
         "properties": {
-            "fetchunix": 1567583907, 
-            "gpsunix": 1567413000
+            "fetchunix": 1568171823, 
+            "gpsunix": 1568173800
         }
-    }
+    }, 
+    "distance": 12384563.55534404
 }
 ````
 

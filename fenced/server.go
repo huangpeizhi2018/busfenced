@@ -2,8 +2,6 @@ package fenced
 
 import (
 	"fmt"
-	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
 	"net"
 	"net/http"
 	"net/url"
@@ -14,6 +12,8 @@ import (
 	"github.com/ReneKroon/ttlcache"
 	"github.com/gomodule/redigo/redis"
 	"github.com/huangpeizhi2018/busfenced/fenced/version"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 	"go.uber.org/zap"
 )
 
@@ -72,12 +72,18 @@ func NewServer(c *Conf) (*Server, error) {
 		return nil, err
 	}
 
+	//调度围栏过期时的回调处理。
+	//1. 打印清除消息
+	//2. DELHOOK
+	//3. DEL 集合 obuid
+
+	//进围栏服务
 	enterExpirationCallback := func(key string, value interface{}) {
-		s.log.Info("dispatch information expires, cleaning enter fenced HOOKS", zap.String(key, value.(*Dispatch).Json()))
+		s.log.Info("clean ENTER/fenced HOOKS, dispatch expires, ", zap.String(key, value.(*Dispatch).Json()))
 
 		obuid, _, valid := parseHook(key)
 		if !valid {
-			s.log.Warn("enter parseHook format incorrect", zap.String("hook", key))
+			s.log.Warn("parseHook ENTER/fenced format incorrect", zap.String("hook", key))
 			return
 		}
 
@@ -85,33 +91,33 @@ func NewServer(c *Conf) (*Server, error) {
 		defer conn.Close()
 
 		if _, err := conn.Do("DELHOOK", key); err != nil {
-			s.log.Warn("cleaning enter fenced HOOKS, DELHOOK error", zap.Error(err))
-			//需关注，但不主动退出。
+			s.log.Warn("clean ENTER/fenced HOOKS, DELHOOK error", zap.Error(err))
 		}
 
 		if _, err := conn.Do("DEL", s.cf.EnterFenced.Collection, obuid); err != nil {
-			s.log.Warn("enter DEL error", zap.String("collection", s.cf.EnterFenced.Collection), zap.String("id", obuid), zap.Error(err))
+			s.log.Warn("DEL ENTER/fenced error", zap.String("collection", s.cf.EnterFenced.Collection), zap.String("id", obuid), zap.Error(err))
 		}
 	}
 
+	//出围栏服务
 	exitExpirationCallback := func(key string, value interface{}) {
-		s.log.Info("dispatch information expires, cleaning exit fenced HOOKS", zap.String(key, value.(*Dispatch).Json()))
+		s.log.Info("clean EXIT/fenced HOOKS, dispatch expires, ", zap.String(key, value.(*Dispatch).Json()))
 
 		obuid, _, valid := parseHook(key)
 		if !valid {
-			s.log.Warn("exit parseHook format incorrect", zap.String("hook", key))
+			s.log.Warn("parseHook EXIT/fenced format incorrect", zap.String("hook", key))
 			return
 		}
 		conn := s.exit.Get()
 		defer conn.Close()
 
 		if _, err := conn.Do("DELHOOK", key); err != nil {
-			s.log.Warn("cleaning exit fenced HOOKS, DELHOOK error", zap.Error(err))
+			s.log.Warn("clean EXIT/fenced HOOKS, DELHOOK error", zap.Error(err))
 			//需关注，但不主动退出。
 		}
 
 		if _, err := conn.Do("DEL", s.cf.ExitFenced.Collection, obuid); err != nil {
-			s.log.Warn("exit DEL error", zap.String("collection", s.cf.ExitFenced.Collection), zap.String("id", obuid), zap.Error(err))
+			s.log.Warn("DEL EXIT/fenced error", zap.String("collection", s.cf.ExitFenced.Collection), zap.String("id", obuid), zap.Error(err))
 		}
 	}
 
@@ -320,12 +326,12 @@ func (s *Server) eventDump(ft FenceType) error {
 	}
 
 	if err != nil {
-		return fmt.Errorf("%s eventDump pubpoint parsePubpoint error, %s", ft, err.Error())
+		return fmt.Errorf("eventDump/%s pubpoint parsePubpoint error, %s", ft, err.Error())
 	}
 
 	//发布点与输出redis不相同
 	if !(s.cf.Target.Addr == pubpoint.Host && s.cf.Target.Port == pubpoint.Port) {
-		return fmt.Errorf("%s eventDump pubpoint is inconsistent with the target's hostname or port", ft)
+		return fmt.Errorf("eventDump/%s pubpoint is inconsistent with the target's hostname or port", ft)
 	}
 
 	conn := s.tp.Get()
@@ -345,41 +351,45 @@ func (s *Server) eventDump(ft FenceType) error {
 				tc := s.tp.Get()
 				defer tc.Close()
 
-				//触发事件不属于该车辆
+				//丢弃，不属于该车辆的触发事件。
 				hook := gjson.Get(jstr, "hook").String()
 				id := gjson.Get(jstr, "id").String()
 				if !strings.HasPrefix(hook, id) {
-					s.log.Info("eventDump event not match", zap.String("id", id), zap.String("hook", hook), zap.String("FenceType", string(ft)))
+					s.log.Debug("eventDump event not match", zap.String("id", id), zap.String("hook", hook), zap.String("FenceType", string(ft)))
 					return nil
 				}
 
+				//丢弃，hook格式不正确的触发事件。
 				_, taskid, valid := parseHook(hook)
 				if !valid {
 					s.log.Warn("eventDump event hook format incorrect", zap.String("hook", hook), zap.String("FenceType", string(ft)))
 					return nil
 				}
 
+				//补充，关联业务ID信息。
 				var err error
-
-				//补充关联的业务ID信息
 				jstr, err = sjson.Set(jstr, "task.id", taskid)
 				if err != nil {
 					s.log.Warn("eventDump json set", zap.String("task.id", taskid), zap.String("jstr", jstr), zap.String("FenceType", string(ft)))
 					return nil
 				}
 
-				s.log.Info("event success", zap.String("jstr", jstr), zap.String("FenceType", string(ft)))
-
+				//属于，进站事件围栏服务触发的事件
 				if ft == ENTER {
-					_, err = tc.Do("LPUSH", s.cf.Target.EnterPoint, jstr)
+					s.log.Info("EventDump ENTER/fenced event success", zap.String("jstr", jstr), zap.String("FenceType", string(ft)))
+
+					_, err := tc.Do("LPUSH", s.cf.Target.EnterPoint, jstr)
+					if err != nil {
+						return fmt.Errorf("EventDump/%s LPUSH error, %s", ft, err)
+					}
 
 					if _, err := tc.Do("INCR", s.cf.Target.EnterTouch); err != nil {
 						s.log.Warn("EventDump INCR", zap.String("FenceType", string(ft)), zap.Error(err))
 					}
 
-					//即时清理
+					//即时清理HOOK定义
 					if s.cf.EnterFenced.DeleteNow {
-						//因为FENCED都开启了enter/exit事件，所以事件与围栏相同时，才删除HOOK。
+						//因为FENCED都开启了enter/exit事件，所以只有进站事件，才删除HOOK定义。
 						if gjson.Get(jstr, "detect").String() == string(ENTER) {
 							func() {
 								conn := s.enter.Get()
@@ -391,29 +401,37 @@ func (s *Server) eventDump(ft FenceType) error {
 					}
 				}
 
+				//属于，出站事件围栏服务触发的事件
 				if ft == EXIT {
-					_, err = tc.Do("LPUSH", s.cf.Target.ExitPoint, jstr)
+					distance := gjson.Get(jstr, "distance").Int()
+					//怀疑围栏触发的GPS有问题
+					if distance > s.cf.ExitFenced.Distance {
+						s.log.Info("EventDump trigger GPS coordinates are incorrect ", zap.String("FenceType", string(ft)), zap.String("jstr", jstr))
+					} else {
+						s.log.Info("EventDump EXIT/fenced event success", zap.String("jstr", jstr), zap.String("FenceType", string(ft)))
 
-					if _, err := tc.Do("INCR", s.cf.Target.ExitTouch); err != nil {
-						s.log.Warn("EventDump INCR", zap.String("FenceType", string(ft)), zap.Error(err))
-					}
+						_, err := tc.Do("LPUSH", s.cf.Target.ExitPoint, jstr)
+						if err != nil {
+							return fmt.Errorf("EventDump/%s LPUSH error, %s", ft, err)
+						}
 
-					//即时清理
-					if s.cf.ExitFenced.DeleteNow {
-						//因为FENCED都开启了enter/exit事件，所以事件与围栏相同时，才删除HOOK。
-						if gjson.Get(jstr, "detect").String() == string(EXIT) {
-							func() {
-								conn := s.exit.Get()
-								defer conn.Close()
+						if _, err := tc.Do("INCR", s.cf.Target.ExitTouch); err != nil {
+							s.log.Warn("EventDump INCR", zap.String("FenceType", string(ft)), zap.Error(err))
+						}
 
-								_, _ = conn.Do("DELHOOK", hook)
-							}()
+						//即时清理HOOK定义
+						if s.cf.ExitFenced.DeleteNow {
+							//因为FENCED都开启了enter/exit事件，所以事件与围栏相同时，才删除HOOK。
+							if gjson.Get(jstr, "detect").String() == string(EXIT) {
+								func() {
+									conn := s.exit.Get()
+									defer conn.Close()
+
+									_, _ = conn.Do("DELHOOK", hook)
+								}()
+							}
 						}
 					}
-				}
-
-				if err != nil {
-					return fmt.Errorf("%s LPUSH error, %s", ft, err)
 				}
 
 				return nil

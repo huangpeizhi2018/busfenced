@@ -62,6 +62,7 @@ type Fenced struct {
 	Collection string `yaml:"collection"`
 	PubPoint   string `yaml:"pubpoint"`
 	DeleteNow  bool   `yaml:"deletenow"`
+	Distance   int64  `yaml:"distance"`
 }
 
 //AOFSHRINK服务
