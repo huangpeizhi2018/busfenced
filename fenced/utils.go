@@ -2,14 +2,24 @@ package fenced
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 
 	geojson "github.com/paulmach/go.geojson"
 )
 
 //检查GPS坐标是否符合要求
-func (s *Server) checkGPS(lat float64, lon float64, valid bool) bool {
-	return true
+func (s *Server) checkGPS(lat float64, lon float64) bool {
+	var ret = true
+
+	//lat-纬度
+	//lon-经度
+	if lat < 20 || lon < 110 || lat > 30 || lon > 120 {
+		ret = false
+		s.log.Debug("lat/lon invalid", zap.Float64("lat", lat), zap.Float64("lon", lon))
+	}
+
+	return ret
 }
 
 //检查Dispatch信息是否符合要求

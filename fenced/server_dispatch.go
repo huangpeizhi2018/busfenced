@@ -34,7 +34,7 @@ func (s *Server) fetchDispatch() error {
 		lon := gjson.Get(jstr, "lon").Float()
 
 		//抛弃经/纬度可能出错的记录
-		if !s.checkGPS(lat, lon, true) {
+		if !s.checkGPS(lat, lon) {
 			s.log.Info("fetchDispatch checkGPS failure, discard this dispatch message", zap.String("dispatch", jstr))
 			continue
 		}
@@ -99,7 +99,7 @@ func (s *Server) updateDispatch() error {
 				[]string{"SETHOOK",
 					i.Obuid + ":" + i.TaskId,
 					s.cf.ExitFenced.PubPoint,
-					"NEARBY", s.cf.EnterFenced.Collection,  "DISTANCE", "FENCE", "DETECT", "enter,exit", "COMMANDS", "set", "POINT", lat, lon, exitM}, " ")
+					"NEARBY", s.cf.EnterFenced.Collection, "DISTANCE", "FENCE", "DETECT", "enter,exit", "COMMANDS", "set", "POINT", lat, lon, exitM}, " ")
 
 			key := i.Obuid + ":" + i.TaskId
 			//进围栏事件触发
@@ -107,7 +107,7 @@ func (s *Server) updateDispatch() error {
 			if _, err := enter.Do("SETHOOK",
 				key,
 				s.cf.EnterFenced.PubPoint,
-				"NEARBY", s.cf.EnterFenced.Collection, "DISTANCE",  "FENCE", "DETECT", "enter,exit", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.EnterMeter); err != nil {
+				"NEARBY", s.cf.EnterFenced.Collection, "DISTANCE", "FENCE", "DETECT", "enter,exit", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.EnterMeter); err != nil {
 				s.log.Warn("updateDispatch SETHOOK enter error", zap.Error(err), zap.String("hook", enterHook), zap.String("dispatch", i.Json()))
 				return err
 			}
@@ -118,7 +118,7 @@ func (s *Server) updateDispatch() error {
 			if _, err := exit.Do("SETHOOK",
 				key,
 				s.cf.ExitFenced.PubPoint,
-				"NEARBY", s.cf.ExitFenced.Collection, "DISTANCE",  "FENCE", "DETECT", "enter,exit", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.ExitMeter); err != nil {
+				"NEARBY", s.cf.ExitFenced.Collection, "DISTANCE", "FENCE", "DETECT", "enter,exit", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.ExitMeter); err != nil {
 				s.log.Warn("updateDispatch SETHOOK exit error", zap.Error(err), zap.String("hook", enterHook), zap.String("dispatch", i.Json()))
 				return err
 			}
