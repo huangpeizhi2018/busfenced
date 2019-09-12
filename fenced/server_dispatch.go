@@ -103,7 +103,7 @@ func (s *Server) updateDispatch() error {
 
 			key := i.Obuid + ":" + i.TaskId
 			//进围栏事件触发
-			s.log.Info("updateDispatch SETHOOK enter fenced", zap.String("hook", enterHook))
+			s.log.Info("updateDispatch SETHOOK ENTER/fenced", zap.String("hook", enterHook))
 			if _, err := enter.Do("SETHOOK",
 				key,
 				s.cf.EnterFenced.PubPoint,
@@ -114,7 +114,7 @@ func (s *Server) updateDispatch() error {
 			s.enterCache.SetWithTTL(key, i, i.InvalidTime.Sub(time.Now()))
 
 			//出围栏事件触发
-			s.log.Info("updateDispatch SETHOOK exit fenced", zap.String("hook", exitHook))
+			s.log.Info("updateDispatch SETHOOK EXIT/fenced", zap.String("hook", exitHook))
 			if _, err := exit.Do("SETHOOK",
 				key,
 				s.cf.ExitFenced.PubPoint,

@@ -1,5 +1,14 @@
 # busfenced/公交总站围栏处理
 
+## 围栏规则
+- 事件有进才有出。没有进围栏事件，则不会产生出围栏事件。
+
+### 非法GPS干扰的问题
+- 非法GPS造成的一次出围栏事件，系统会根据出围栏触发消息中的distance属性值进行判断，如果距离值大于“配置文件中规定阀值”，则认为此事件不正确，会有日志告警，不会执行DELHOOK动作。
+- 但会认为下一个或下某个GPS正常点，会产生进围栏事件！
+- 存在问题：如果下某个GPS正常点不产生进围栏事件，则会造成“丢失正常的出围栏事件”。
+
+
 ## 围栏分析架构
 <p align="center" style="text-align:center;">
   <img src="https://github.com/huangpeizhi2018/busfenced/blob/master/docs/fenced.jpg" width="500" />
@@ -87,7 +96,7 @@ gps = '{ "obuid": "123456", "lat": 23.146, "lon": 113.351, "gpstime": "2019-09-1
 r.lpush('queue.bus.gps',gps)
 ```   
 
-### 进围栏事件
+### 进围栏事件格式
 - 原始围栏事件/任务ID
 ````
 {
