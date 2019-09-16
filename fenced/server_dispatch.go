@@ -39,21 +39,26 @@ func (s *Server) fetchDispatch() error {
 			continue
 		}
 
-		enter := gjson.Get(jstr, "enterMeter").Float()
-		exit := gjson.Get(jstr, "exitMeter").Float()
+		meter := gjson.Get(jstr, "meter").Float()
 		//检查米数是否符合要求
-		if !s.checkMeter(enter, exit) {
+		if !s.checkMeter(meter) {
 			s.log.Info("fetchDispatch checkMeter failure, discard this dispatch message", zap.String("dispatch", jstr))
 			continue
 		}
 
+		detect := gjson.Get(jstr, "detect").String()
+		if !(detect == string(ENTER) || detect == string(EXIT)) {
+			s.log.Info("fetchDispatch detect error, discard this dispatch message", zap.String("dispatch", jstr))
+			continue
+		}
+
 		m := Dispatch{
-			Obuid:      gjson.Get(jstr, "obuId").String(),
-			Lat:        lat,
-			Lon:        lon,
-			EnterMeter: enter,
-			ExitMeter:  exit,
-			TaskId:     gjson.Get(jstr, "taskId").String(),
+			Obuid:  gjson.Get(jstr, "obuId").String(),
+			Lat:    lat,
+			Lon:    lon,
+			Meter:  meter,
+			Detect: detect,
+			TaskId: gjson.Get(jstr, "taskId").String(),
 		}
 
 		//invalidTime日期分析
@@ -86,43 +91,50 @@ func (s *Server) updateDispatch() error {
 		for i := range s.chanDispatch {
 			lat := strconv.FormatFloat(i.Lat, 'f', -1, 64)
 			lon := strconv.FormatFloat(i.Lon, 'f', -1, 64)
-			enterM := strconv.FormatFloat(i.EnterMeter, 'f', -1, 64)
-			exitM := strconv.FormatFloat(i.ExitMeter, 'f', -1, 64)
+			meter := strconv.FormatFloat(i.Meter, 'f', -1, 64)
 
 			//命令字符串
-			enterHook := strings.Join(
-				[]string{"SETHOOK",
-					i.Obuid + ":" + i.TaskId,
-					s.cf.EnterFenced.PubPoint,
-					"NEARBY", s.cf.EnterFenced.Collection, "DISTANCE", "FENCE", "DETECT", "enter,exit", "COMMANDS", "set", "POINT", lat, lon, enterM}, " ")
-			exitHook := strings.Join(
-				[]string{"SETHOOK",
-					i.Obuid + ":" + i.TaskId,
-					s.cf.ExitFenced.PubPoint,
-					"NEARBY", s.cf.EnterFenced.Collection, "DISTANCE", "FENCE", "DETECT", "enter,exit", "COMMANDS", "set", "POINT", lat, lon, exitM}, " ")
-
+			var hook string
 			key := i.Obuid + ":" + i.TaskId
-			//进围栏事件触发
-			s.log.Info("updateDispatch SETHOOK ENTER/fenced", zap.String("hook", enterHook))
-			if _, err := enter.Do("SETHOOK",
-				key,
-				s.cf.EnterFenced.PubPoint,
-				"NEARBY", s.cf.EnterFenced.Collection, "DISTANCE", "FENCE", "DETECT", "enter,exit", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.EnterMeter); err != nil {
-				s.log.Warn("updateDispatch SETHOOK enter error", zap.Error(err), zap.String("hook", enterHook), zap.String("dispatch", i.Json()))
-				return err
+			if i.Detect == string(ENTER) {
+				hook = strings.Join(
+					[]string{"SETHOOK",
+						key,
+						s.cf.EnterFenced.PubPoint,
+						"NEARBY", s.cf.EnterFenced.Collection, "DISTANCE", "FENCE", "DETECT", "enter", "COMMANDS", "set", "POINT", lat, lon, meter}, " ")
+			} else if i.Detect == string(EXIT) {
+				hook = strings.Join(
+					[]string{"SETHOOK",
+						key,
+						s.cf.ExitFenced.PubPoint,
+						"NEARBY", s.cf.EnterFenced.Collection, "DISTANCE", "FENCE", "DETECT", "exit", "COMMANDS", "set", "POINT", lat, lon, meter}, " ")
+			} else {
+				panic("never come here!")
 			}
-			s.enterCache.SetWithTTL(key, i, i.InvalidTime.Sub(time.Now()))
 
-			//出围栏事件触发
-			s.log.Info("updateDispatch SETHOOK EXIT/fenced", zap.String("hook", exitHook))
-			if _, err := exit.Do("SETHOOK",
-				key,
-				s.cf.ExitFenced.PubPoint,
-				"NEARBY", s.cf.ExitFenced.Collection, "DISTANCE", "FENCE", "DETECT", "enter,exit", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.ExitMeter); err != nil {
-				s.log.Warn("updateDispatch SETHOOK exit error", zap.Error(err), zap.String("hook", enterHook), zap.String("dispatch", i.Json()))
-				return err
+			s.log.Info("updateDispatch SETHOOK", zap.String("detect", i.Detect), zap.String("hook", hook))
+
+			if i.Detect == string(ENTER) {
+				if _, err := enter.Do("SETHOOK",
+					key,
+					s.cf.EnterFenced.PubPoint,
+					"NEARBY", s.cf.EnterFenced.Collection, "DISTANCE", "FENCE", "DETECT", "enter", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.Meter); err != nil {
+					s.log.Warn("updateDispatch SETHOOK ENTER error", zap.Error(err), zap.String("hook", hook), zap.String("dispatch", i.Json()))
+					return err
+				}
+				s.enterCache.SetWithTTL(key, i, i.InvalidTime.Sub(time.Now()))
+			} else if i.Detect == string(EXIT) {
+				if _, err := exit.Do("SETHOOK",
+					key,
+					s.cf.ExitFenced.PubPoint,
+					"NEARBY", s.cf.ExitFenced.Collection, "DISTANCE", "FENCE", "DETECT", "exit", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.Meter); err != nil {
+					s.log.Warn("updateDispatch SETHOOK EXIT error", zap.Error(err), zap.String("hook", hook), zap.String("dispatch", i.Json()))
+					return err
+				}
+				s.exitCache.SetWithTTL(key, i, i.InvalidTime.Sub(time.Now()))
+			} else {
+				panic("never come here!")
 			}
-			s.exitCache.SetWithTTL(key, i, i.InvalidTime.Sub(time.Now()))
 		}
 	}
 

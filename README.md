@@ -70,9 +70,9 @@
 {
     "obuId": "941184", 
     "lat": 23.1152778, 
-    "lon": 113.2825, 
-    "enterMeter": 100, 
-    "exitMeter": 200, 
+    "lon": 113.2825,
+    "detect": "enter"或"exit" 
+    "meter": 100, 
     "taskId": "8", 
     "invalidTime": "2019-09-03T16:55:00+08:00"
 }
@@ -85,7 +85,9 @@ r = Redis.new(:host=>'10.88.100.132', :port=>6390)
 # 围栏指令
 # SETHOOK 933526:1568048402031 redis://127.0.0.1:6390/pub-enterfenced NEARBY busgps FENCE DETECT enter,exit COMMANDS set POINT 23.145199 113.35396 200"}
 # SETHOOK 933526:1568048402031 redis://127.0.0.1:6390/pub-exitfenced NEARBY busgps FENCE DETECT enter,exit COMMANDS set POINT 23.145199 113.35396 200"}   
-dispatch = '{"obuId": "123456","lat": 23.145199,"lon": 113.35396,"enterMeter": 200,"exitMeter": 200,"taskId": "1234567890","invalidTime": "2019-09-11T17:30:00+08:00"}'
+dispatch = '{"obuId": "123456","lat": 23.145199,"lon": 113.35396,"meter": 200,"taskId": "1234567890","detect": "enter","invalidTime": "2019-09-11T17:30:00+08:00"}'
+r.lpush('queue.bus.dispatch',dispatch)
+dispatch = '{"obuId": "123456","lat": 23.145199,"lon": 113.35396,"meter": 200,"taskId": "1234567890","detect": "exit","invalidTime": "2019-09-11T17:30:00+08:00"}'
 r.lpush('queue.bus.dispatch',dispatch)
 # GPS信息 
 ## 进入围栏
