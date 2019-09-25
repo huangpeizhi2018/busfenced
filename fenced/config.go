@@ -15,8 +15,8 @@ import (
 //配置结构
 type Conf struct {
 	ConfigFile    string    `yaml:"-"`
-	Service       string    `yaml:"service"`
-	GpsTimeOffset float64   `yaml:"gpstimeoffset"`
+	Service       string    `yaml:"service"`       //服务名称
+	GpsTimeOffset float64   `yaml:"gpstimeoffset"` //GPSTIME偏移秒数，不管偏移值为-1
 	ChanLen       int       `yaml:"chanlen"`
 	PidFile       string    `yaml:"pidfile"`
 	Source        Source    `yaml:"source"`
@@ -61,8 +61,8 @@ type Fenced struct {
 	Port       string `yaml:"port"`
 	Collection string `yaml:"collection"`
 	PubPoint   string `yaml:"pubpoint"`
-	DeleteNow  bool   `yaml:"deletenow"`
-	Distance   int64  `yaml:"distance"` //围栏事件触发有效的距离定义
+	DeleteNow  bool   `yaml:"deletenow"` //是否触发事件后，立即清除HOOK。
+	Distance   int64  `yaml:"distance"` //围栏事件触发有效的距离定义。
 }
 
 //AOFSHRINK服务

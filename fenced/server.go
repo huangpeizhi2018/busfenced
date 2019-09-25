@@ -79,7 +79,7 @@ func NewServer(c *Conf) (*Server, error) {
 
 	//进围栏服务
 	enterExpirationCallback := func(key string, value interface{}) {
-		s.log.Info("clean ENTER/fenced HOOKS, dispatch expires, ", zap.String(key, value.(*Dispatch).Json()))
+		s.log.Info("clean ENTER/fenced HOOKS  and obuid/lat/lon, dispatch expires, ", zap.String(key, value.(*Dispatch).Json()))
 
 		obuid, _, valid := parseHook(key)
 		if !valid {
@@ -101,7 +101,7 @@ func NewServer(c *Conf) (*Server, error) {
 
 	//出围栏服务
 	exitExpirationCallback := func(key string, value interface{}) {
-		s.log.Info("clean EXIT/fenced HOOKS, dispatch expires, ", zap.String(key, value.(*Dispatch).Json()))
+		s.log.Info("clean EXIT/fenced HOOKS and obuid/lat/lon, dispatch expires, ", zap.String(key, value.(*Dispatch).Json()))
 
 		obuid, _, valid := parseHook(key)
 		if !valid {
@@ -113,7 +113,6 @@ func NewServer(c *Conf) (*Server, error) {
 
 		if _, err := conn.Do("DELHOOK", key); err != nil {
 			s.log.Warn("clean EXIT/fenced HOOKS, DELHOOK error", zap.Error(err))
-			//需关注，但不主动退出。
 		}
 
 		if _, err := conn.Do("DEL", s.cf.ExitFenced.Collection, obuid); err != nil {

@@ -32,7 +32,7 @@ func (s *Server) fetchGPS() error {
 		lat := gjson.Get(jstr, "lat").Float()
 		lon := gjson.Get(jstr, "lon").Float()
 
-		//抛弃经/纬度可能出错的记录
+		//抛弃经/纬度出错的记录
 		if !s.checkGPS(lat, lon) {
 			s.log.Info("fetchGPS checkGPS failure, discard this GPS message", zap.String("gps", jstr))
 			continue
