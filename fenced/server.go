@@ -56,19 +56,33 @@ func NewServer(c *Conf) (*Server, error) {
 		return nil, err
 	}
 
-	if s.sp, err = s.setRedis(net.JoinHostPort(s.cf.Source.Addr, s.cf.Source.Port), s.cf.Source.Passwd, 0, s.cf.Source.MaxIdel); err != nil {
+	if s.sp, err = s.setRedis(net.JoinHostPort(s.cf.Source.Addr, s.cf.Source.Port),
+		s.cf.Source.Passwd,
+		0,
+		s.cf.Source.MaxIdel);
+		err != nil {
 		return nil, err
 	}
 
-	if s.tp, err = s.setRedis(net.JoinHostPort(s.cf.Target.Addr, s.cf.Target.Port), s.cf.Target.Passwd, 0, s.cf.Target.MaxIdel); err != nil {
+	if s.tp, err = s.setRedis(net.JoinHostPort(s.cf.Target.Addr, s.cf.Target.Port),
+		s.cf.Target.Passwd,
+		0,
+		s.cf.Target.MaxIdel);
+		err != nil {
 		return nil, err
 	}
 
-	if s.enter, err = s.setRedis(net.JoinHostPort(s.cf.EnterFenced.Addr, s.cf.EnterFenced.Port), "", 0, 0); err != nil {
+	if s.enter, err = s.setRedis(net.JoinHostPort(s.cf.EnterFenced.Addr, s.cf.EnterFenced.Port),
+		"",
+		0,
+		0); err != nil {
 		return nil, err
 	}
 
-	if s.exit, err = s.setRedis(net.JoinHostPort(s.cf.ExitFenced.Addr, s.cf.ExitFenced.Port), "", 0, 0); err != nil {
+	if s.exit, err = s.setRedis(net.JoinHostPort(s.cf.ExitFenced.Addr, s.cf.ExitFenced.Port),
+		"",
+		0,
+		0); err != nil {
 		return nil, err
 	}
 
@@ -79,11 +93,13 @@ func NewServer(c *Conf) (*Server, error) {
 
 	//进围栏服务
 	enterExpirationCallback := func(key string, value interface{}) {
-		s.log.Info("clean ENTER/fenced HOOKS  and obuid/lat/lon, dispatch expires, ", zap.String(key, value.(*Dispatch).Json()))
+		s.log.Info("clean ENTER/fenced HOOKS  and obuid/lat/lon, dispatch expires",
+			zap.String(key, value.(*Dispatch).Json()))
 
 		obuid, _, valid := parseHook(key)
 		if !valid {
-			s.log.Warn("parseHook ENTER/fenced format incorrect", zap.String("hook", key))
+			s.log.Warn("parseHook ENTER/fenced format incorrect",
+				zap.String("hook", key))
 			return
 		}
 
@@ -91,32 +107,42 @@ func NewServer(c *Conf) (*Server, error) {
 		defer conn.Close()
 
 		if _, err := conn.Do("DELHOOK", key); err != nil {
-			s.log.Warn("clean ENTER/fenced HOOKS, DELHOOK error", zap.Error(err))
+			s.log.Warn("clean ENTER/fenced HOOKS, DELHOOK error",
+				zap.Error(err))
 		}
 
 		if _, err := conn.Do("DEL", s.cf.EnterFenced.Collection, obuid); err != nil {
-			s.log.Warn("DEL ENTER/fenced error", zap.String("collection", s.cf.EnterFenced.Collection), zap.String("id", obuid), zap.Error(err))
+			s.log.Warn("DEL ENTER/fenced error",
+				zap.String("collection", s.cf.EnterFenced.Collection),
+				zap.String("id", obuid),
+				zap.Error(err))
 		}
 	}
 
 	//出围栏服务
 	exitExpirationCallback := func(key string, value interface{}) {
-		s.log.Info("clean EXIT/fenced HOOKS and obuid/lat/lon, dispatch expires, ", zap.String(key, value.(*Dispatch).Json()))
+		s.log.Info("clean EXIT/fenced HOOKS and obuid/lat/lon, dispatch expires, ",
+			zap.String(key, value.(*Dispatch).Json()))
 
 		obuid, _, valid := parseHook(key)
 		if !valid {
-			s.log.Warn("parseHook EXIT/fenced format incorrect", zap.String("hook", key))
+			s.log.Warn("parseHook EXIT/fenced format incorrect",
+				zap.String("hook", key))
 			return
 		}
 		conn := s.exit.Get()
 		defer conn.Close()
 
 		if _, err := conn.Do("DELHOOK", key); err != nil {
-			s.log.Warn("clean EXIT/fenced HOOKS, DELHOOK error", zap.Error(err))
+			s.log.Warn("clean EXIT/fenced HOOKS, DELHOOK error",
+				zap.Error(err))
 		}
 
 		if _, err := conn.Do("DEL", s.cf.ExitFenced.Collection, obuid); err != nil {
-			s.log.Warn("DEL EXIT/fenced error", zap.String("collection", s.cf.ExitFenced.Collection), zap.String("id", obuid), zap.Error(err))
+			s.log.Warn("DEL EXIT/fenced error",
+				zap.String("collection", s.cf.ExitFenced.Collection),
+				zap.String("id", obuid),
+				zap.Error(err))
 		}
 	}
 
@@ -219,7 +245,8 @@ func (s *Server) Run() error {
 	go func() {
 		s.log.Info("fetchDispatch startup",
 			zap.String("redis", net.JoinHostPort(s.cf.Target.Addr, s.cf.Target.Port)),
-			zap.String("queue", s.cf.Source.DispatchPoint), zap.String("touch", s.cf.Source.DispatchTouch),
+			zap.String("queue", s.cf.Source.DispatchPoint),
+			zap.String("touch", s.cf.Source.DispatchTouch),
 		)
 		errchan <- s.fetchDispatch()
 	}()
@@ -236,7 +263,8 @@ func (s *Server) Run() error {
 	go func() {
 		s.log.Info("fetchGPS startup",
 			zap.String("redis", net.JoinHostPort(s.cf.Source.Addr, s.cf.Source.Port)),
-			zap.String("queue", s.cf.Source.GPSPoint), zap.String("touch", s.cf.Source.GPSTouch),
+			zap.String("queue", s.cf.Source.GPSPoint),
+			zap.String("touch", s.cf.Source.GPSTouch),
 		)
 		errchan <- s.fetchGPS()
 	}()
@@ -354,14 +382,19 @@ func (s *Server) eventDump(ft FenceType) error {
 				hook := gjson.Get(jstr, "hook").String()
 				id := gjson.Get(jstr, "id").String()
 				if !strings.HasPrefix(hook, id) {
-					s.log.Debug("eventDump event not match", zap.String("id", id), zap.String("hook", hook), zap.String("FenceType", string(ft)))
+					s.log.Debug("eventDump event not match",
+						zap.String("id", id),
+						zap.String("hook", hook),
+						zap.String("FenceType", string(ft)))
 					return nil
 				}
 
 				//丢弃，hook格式不正确的触发事件。
 				_, taskid, valid := parseHook(hook)
 				if !valid {
-					s.log.Warn("eventDump event hook format incorrect", zap.String("hook", hook), zap.String("FenceType", string(ft)))
+					s.log.Warn("eventDump event hook format incorrect",
+						zap.String("hook", hook),
+						zap.String("FenceType", string(ft)))
 					return nil
 				}
 
@@ -369,13 +402,18 @@ func (s *Server) eventDump(ft FenceType) error {
 				var err error
 				jstr, err = sjson.Set(jstr, "task.id", taskid)
 				if err != nil {
-					s.log.Warn("eventDump json set", zap.String("task.id", taskid), zap.String("jstr", jstr), zap.String("FenceType", string(ft)))
+					s.log.Warn("eventDump json set",
+						zap.String("task.id", taskid),
+						zap.String("jstr", jstr),
+						zap.String("FenceType", string(ft)))
 					return nil
 				}
 
 				//属于，进站事件围栏服务触发的事件
 				if ft == ENTER {
-					s.log.Info("EventDump ENTER/fenced event success", zap.String("jstr", jstr), zap.String("FenceType", string(ft)))
+					s.log.Info("EventDump ENTER/fenced event success",
+						zap.String("jstr", jstr),
+						zap.String("FenceType", string(ft)))
 
 					_, err := tc.Do("LPUSH", s.cf.Target.EnterPoint, jstr)
 					if err != nil {
@@ -383,7 +421,8 @@ func (s *Server) eventDump(ft FenceType) error {
 					}
 
 					if _, err := tc.Do("INCR", s.cf.Target.EnterTouch); err != nil {
-						s.log.Warn("EventDump INCR", zap.String("FenceType", string(ft)), zap.Error(err))
+						s.log.Warn("EventDump INCR",
+							zap.String("FenceType", string(ft)), zap.Error(err))
 					}
 
 					//即时清理HOOK定义
@@ -405,9 +444,13 @@ func (s *Server) eventDump(ft FenceType) error {
 					distance := gjson.Get(jstr, "distance").Int()
 					//怀疑围栏触发的GPS有问题
 					if distance > s.cf.ExitFenced.Distance {
-						s.log.Info("EventDump trigger GPS coordinates are incorrect ", zap.String("FenceType", string(ft)), zap.String("jstr", jstr))
+						s.log.Info("EventDump trigger GPS coordinates are incorrect ",
+							zap.String("FenceType", string(ft)),
+							zap.String("jstr", jstr))
 					} else {
-						s.log.Info("EventDump EXIT/fenced event success", zap.String("jstr", jstr), zap.String("FenceType", string(ft)))
+						s.log.Info("EventDump EXIT/fenced event success",
+							zap.String("jstr", jstr),
+							zap.String("FenceType", string(ft)))
 
 						_, err := tc.Do("LPUSH", s.cf.Target.ExitPoint, jstr)
 						if err != nil {
@@ -415,7 +458,9 @@ func (s *Server) eventDump(ft FenceType) error {
 						}
 
 						if _, err := tc.Do("INCR", s.cf.Target.ExitTouch); err != nil {
-							s.log.Warn("EventDump INCR", zap.String("FenceType", string(ft)), zap.Error(err))
+							s.log.Warn("EventDump INCR",
+								zap.String("FenceType", string(ft)),
+								zap.Error(err))
 						}
 
 						//即时清理HOOK定义
@@ -437,7 +482,9 @@ func (s *Server) eventDump(ft FenceType) error {
 			}(jstr, ft)
 
 			if err != nil {
-				s.log.Warn("eventDump", zap.String("jstr", jstr), zap.Error(err))
+				s.log.Warn("eventDump",
+					zap.String("jstr", jstr),
+					zap.Error(err))
 				return err
 			}
 		case redis.Subscription:

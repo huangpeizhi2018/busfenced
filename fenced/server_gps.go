@@ -17,7 +17,9 @@ func (s *Server) fetchGPS() error {
 	for {
 		bp, err := redis.Strings(conn.Do("BRPOP", s.cf.Source.GPSPoint, 0))
 		if err != nil {
-			s.log.Warn("fetchGPS BRPOP", zap.String("queue", s.cf.Source.GPSPoint), zap.Error(err))
+			s.log.Warn("fetchGPS BRPOP",
+				zap.String("queue", s.cf.Source.GPSPoint),
+				zap.Error(err))
 			//5秒后重试
 			time.Sleep(5 * time.Second)
 			continue
@@ -25,7 +27,10 @@ func (s *Server) fetchGPS() error {
 
 		incr, err := redis.Int64(conn.Do("INCR", s.cf.Source.GPSTouch))
 		if err != nil {
-			s.log.Warn("fetchGPS INCR", zap.Int64("incr", incr), zap.String("touch", s.cf.Source.GPSTouch), zap.Error(err))
+			s.log.Warn("fetchGPS INCR",
+				zap.Int64("incr", incr),
+				zap.String("touch", s.cf.Source.GPSTouch),
+				zap.Error(err))
 		}
 
 		jstr := bp[1]
@@ -34,7 +39,8 @@ func (s *Server) fetchGPS() error {
 
 		//抛弃经/纬度出错的记录
 		if !s.checkGPS(lat, lon) {
-			s.log.Info("fetchGPS checkGPS failure, discard this GPS message", zap.String("gps", jstr))
+			s.log.Info("fetchGPS checkGPS failure, discard this GPS message",
+				zap.String("gps", jstr))
 			continue
 		}
 
@@ -52,14 +58,16 @@ func (s *Server) fetchGPS() error {
 		gt := gjson.Get(jstr, "gpstime").String()
 		t, err := time.ParseInLocation(time.RFC3339, gt, time.Local)
 		if err != nil {
-			s.log.Warn("fetchGPS parse gpstime failure, discard this GPS message", zap.Error(err), zap.String("gps", jstr))
+			s.log.Warn("fetchGPS parse gpstime failure, discard this GPS message",
+				zap.Error(err),
+				zap.String("gps", jstr))
 			continue
 		}
 
 		//抛弃超时或延迟消息
 		if s.cf.GpsTimeOffset >= 0 {
 			if math.Abs(time.Now().Sub(t).Seconds()) > s.cf.GpsTimeOffset {
-				s.log.Info("fetchGPS gpstime delay over the threshold, discard this GPS message",
+				s.log.Debug("fetchGPS gpstime delay over the threshold, discard this GPS message",
 					zap.Float64("threshold", s.cf.GpsTimeOffset),
 					zap.String("gps", jstr))
 				continue
@@ -84,19 +92,24 @@ func (s *Server) updateGPS() error {
 		for i := range s.chanGPS {
 			bs, err := s.mkGeojson("POINT", *i)
 			if err != nil {
-				s.log.Warn("updateGPS mkGeojson error", zap.Error(err), zap.String("gps", i.Json()))
+				s.log.Warn("updateGPS mkGeojson error", zap.Error(err),
+					zap.String("gps", i.Json()))
 				continue
 			}
 
 			if _, err := enter.Do("SET", s.cf.EnterFenced.Collection, i.Obuid,
 				"OBJECT", string(bs)); err != nil {
-				s.log.Warn("updateGPS SET enter fenced error", zap.Error(err), zap.String("gps", i.Json()))
+				s.log.Warn("updateGPS SET enter fenced error",
+					zap.Error(err),
+					zap.String("gps", i.Json()))
 				return err
 			}
 
 			if _, err := exit.Do("SET", s.cf.ExitFenced.Collection, i.Obuid,
 				"OBJECT", string(bs)); err != nil {
-				s.log.Warn("updateGPS SET exit fenced error", zap.Error(err), zap.String("gps", i.Json()))
+				s.log.Warn("updateGPS SET exit fenced error",
+					zap.Error(err),
+					zap.String("gps", i.Json()))
 				return err
 			}
 		}
