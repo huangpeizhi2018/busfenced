@@ -4,6 +4,7 @@
 service: busfenced-cmder
 
 gpstimeoffset: -1
+invalidtimeoffset: 600
 chanlen: 10
 pidfile: /opt/busfenced/pid/busfenced.pid
 
@@ -59,7 +60,7 @@ aofshrink:
 
 # 日志配置
 zlog:
-  level: debug
+  level: info
   development: true
   encoding: console
   outputPaths: ['/opt/busfenced/log/busfenced.log', stdout]

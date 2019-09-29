@@ -1,13 +1,22 @@
 # busfenced/公交总站围栏处理
 
-## 围栏规则
-- 事件有进才有出。没有进围栏事件，则不会产生出围栏事件。
+## 围栏服务需注意之处
+- 围栏事件：有进才有出。没有“进”围栏事件，就不会产生“出”围栏事件。
+- 围栏定义包含“到期时间”，当“到期时间”达到时，会清理围栏定义及对应终端前一条GPS信息。
+- 围栏定义配置中的deletenow参数为true时，则触发事件后，即刻会删除围栏定义，并清理对应终端GPS信息。
+- 当接收到新围栏定义时，根据detect中的值，生成新围栏，并清理之前的对应终端GPS信息。
 
 ### 非法GPS干扰的问题
 - 非法GPS造成的一次出围栏事件，系统会根据出围栏触发消息中的distance属性值进行判断，如果距离值大于“配置文件中规定阀值”，则认为此事件不正确，会有日志告警，不会执行DELHOOK动作。
 - 但会认为下一个或下某个GPS正常点，会产生进围栏事件！
 - 存在问题：如果下某个GPS正常点不产生进围栏事件，则会造成“丢失正常的出围栏事件”。
-
+- 对GPS正确性只有简单判断。
+```
+	if lat < 20 || lon < 110 || lat > 30 || lon > 120 {
+		ret = false
+		s.log.Debug("lat/lon invalid", zap.Float64("lat", lat), zap.Float64("lon", lon))
+	}
+```
 
 ## 围栏分析架构
 <p align="center" style="text-align:center;">
@@ -70,9 +79,9 @@
 {
     "obuId": "941184", 
     "lat": 23.1152778, 
-    "lon": 113.2825, 
-    "enterMeter": 100, 
-    "exitMeter": 200, 
+    "lon": 113.2825,
+    "detect": "enter"或"exit" 
+    "meter": 100, 
     "taskId": "8", 
     "invalidTime": "2019-09-03T16:55:00+08:00"
 }
@@ -85,7 +94,9 @@ r = Redis.new(:host=>'10.88.100.132', :port=>6390)
 # 围栏指令
 # SETHOOK 933526:1568048402031 redis://127.0.0.1:6390/pub-enterfenced NEARBY busgps FENCE DETECT enter,exit COMMANDS set POINT 23.145199 113.35396 200"}
 # SETHOOK 933526:1568048402031 redis://127.0.0.1:6390/pub-exitfenced NEARBY busgps FENCE DETECT enter,exit COMMANDS set POINT 23.145199 113.35396 200"}   
-dispatch = '{"obuId": "123456","lat": 23.145199,"lon": 113.35396,"enterMeter": 200,"exitMeter": 200,"taskId": "1234567890","invalidTime": "2019-09-11T17:30:00+08:00"}'
+dispatch = '{"obuId": "123456","lat": 23.145199,"lon": 113.35396,"meter": 200,"taskId": "1234567890","detect": "enter","invalidTime": "2019-09-11T17:30:00+08:00"}'
+r.lpush('queue.bus.dispatch',dispatch)
+dispatch = '{"obuId": "123456","lat": 23.145199,"lon": 113.35396,"meter": 200,"taskId": "1234567890","detect": "exit","invalidTime": "2019-09-11T17:30:00+08:00"}'
 r.lpush('queue.bus.dispatch',dispatch)
 # GPS信息 
 ## 进入围栏
