@@ -31,13 +31,13 @@ func main() {
 	//加载分析配置文件
 	cf, err := fenced.NewCf(confn)
 	if err != nil {
-		log.Warn("busfenced load config", zap.String("confn", confn), zap.Error(err))
+		log.Warn("busfenced load config failure", zap.String("confn", confn), zap.Error(err))
 		return
 	}
 
 	pid, err := pidfile.New(cf.PidFile)
 	if err != nil {
-		log.Warn("busfenced create pid file", zap.String("pidfile", cf.PidFile), zap.Error(err))
+		log.Warn("busfenced create pidfile failure", zap.String("pidfile", cf.PidFile), zap.Error(err))
 		return
 	}
 
@@ -46,13 +46,13 @@ func main() {
 	//分析服务
 	server, err := fenced.NewServer(cf)
 	if err != nil {
-		log.Warn("busfenced server initialize", zap.Error(err))
+		log.Warn("busfenced server initialize failure", zap.Error(err))
 		return
 	}
 	defer server.Close()
 
 	if err := fenced.Run(server); err != nil {
-		log.Warn("busfenced server run", zap.Error(err))
+		log.Warn("busfenced server abnormal exit", zap.Error(err))
 		return
 	}
 }
@@ -70,5 +70,5 @@ func checkFileExist(filename string) bool {
 func init() {
 	flag.Parse()
 
-	confn = "cmder.yaml"
+	confn = "busfenced.yaml"
 }

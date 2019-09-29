@@ -68,11 +68,15 @@ func (s *Server) fetchDispatch() error {
 				zap.String("dispatch", jstr))
 			continue
 		}
+		//调整偏移量
+		t = t.Add(time.Duration(s.cf.InvalidTimeOffset) * time.Second)
 
 		//抛弃超时或延迟消息
 		if t.Before(time.Now()) {
 			s.log.Info("fetchDispatch invalidTime before now, discard this dispatch message",
-				zap.String("dispatch", jstr))
+				zap.String("dispatch", jstr),
+				zap.Time("invalidtime", t),
+				zap.Int64("invalidtimeoffset", s.cf.InvalidTimeOffset))
 			continue
 		}
 

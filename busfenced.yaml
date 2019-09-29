@@ -4,6 +4,7 @@
 service: busfenced-cmder
 
 gpstimeoffset: -1
+invalidtimeoffset: 600
 chanlen: 10
 pidfile: /opt/busfenced/pid/busfenced.pid
 

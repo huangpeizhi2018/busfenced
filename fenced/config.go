@@ -14,18 +14,19 @@ import (
 
 //配置结构
 type Conf struct {
-	ConfigFile    string    `yaml:"-"`
-	Service       string    `yaml:"service"`       //服务名称
-	GpsTimeOffset float64   `yaml:"gpstimeoffset"` //GPSTIME偏移秒数，不管偏移值为-1
-	ChanLen       int       `yaml:"chanlen"`
-	PidFile       string    `yaml:"pidfile"`
-	Source        Source    `yaml:"source"`
-	Target        Target    `yaml:"target"`
-	EnterFenced   Fenced    `yaml:"enterfenced"`
-	ExitFenced    Fenced    `yaml:"exitfenced"`
-	AOFShrink     AOFShrink `yaml:"aofshrink"`
-	Stats         *Stats    `yaml:"stats"`
-	ZLog          ZLog      `yaml:"zlog"`
+	ConfigFile        string    `yaml:"-"`
+	Service           string    `yaml:"service"`           //服务名称
+	GpsTimeOffset     float64   `yaml:"gpstimeoffset"`     //GPSTIME偏移秒数，不管偏移值为-1
+	InvalidTimeOffset int64     `yaml:"invalidtimeoffset"` //为防止“业务系统的调度过期时间”过快或过慢，添加适当的偏移秒数。
+	ChanLen           int       `yaml:"chanlen"`
+	PidFile           string    `yaml:"pidfile"`
+	Source            Source    `yaml:"source"`
+	Target            Target    `yaml:"target"`
+	EnterFenced       Fenced    `yaml:"enterfenced"`
+	ExitFenced        Fenced    `yaml:"exitfenced"`
+	AOFShrink         AOFShrink `yaml:"aofshrink"`
+	Stats             *Stats    `yaml:"stats"`
+	ZLog              ZLog      `yaml:"zlog"`
 }
 
 //来源数据
@@ -62,7 +63,7 @@ type Fenced struct {
 	Collection string `yaml:"collection"`
 	PubPoint   string `yaml:"pubpoint"`
 	DeleteNow  bool   `yaml:"deletenow"` //是否触发事件后，立即清除HOOK。
-	Distance   int64  `yaml:"distance"` //围栏事件触发有效的距离定义。
+	Distance   int64  `yaml:"distance"`  //围栏事件触发有效的距离定义。
 }
 
 //AOFSHRINK服务
