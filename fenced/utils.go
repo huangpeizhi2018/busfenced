@@ -27,6 +27,7 @@ func (s *Server) checkMeter(meter float64) bool {
 	return true
 }
 
+//gps点转换为geojson对象格式，并添加“附加属性”
 func (s *Server) mkGeojson(ty string, i GPS) ([]byte, error) {
 	var g *geojson.Geometry
 

@@ -97,94 +97,92 @@ func (s *Server) updateDispatch() error {
 	exit := s.exit.Get()
 	defer exit.Close()
 
-	for {
-		for i := range s.chanDispatch {
-			lat := strconv.FormatFloat(i.Lat, 'f', -1, 64)
-			lon := strconv.FormatFloat(i.Lon, 'f', -1, 64)
-			meter := strconv.FormatFloat(i.Meter, 'f', -1, 64)
+	for i := range s.chanDispatch {
+		lat := strconv.FormatFloat(i.Lat, 'f', -1, 64)
+		lon := strconv.FormatFloat(i.Lon, 'f', -1, 64)
+		meter := strconv.FormatFloat(i.Meter, 'f', -1, 64)
 
-			//命令字符串
-			var hook string
-			key := i.Obuid + ":" + i.TaskId
-			if i.Detect == string(ENTER) {
-				hook = strings.Join(
-					[]string{"SETHOOK",
-						key,
-						s.cf.EnterFenced.PubPoint,
-						"NEARBY",
-						s.cf.EnterFenced.Collection,
-						"DISTANCE", "FENCE", "DETECT", "enter", "COMMANDS", "set", "POINT", lat, lon, meter}, " ")
-			} else if i.Detect == string(EXIT) {
-				hook = strings.Join(
-					[]string{"SETHOOK",
-						key,
-						s.cf.ExitFenced.PubPoint,
-						"NEARBY",
-						s.cf.EnterFenced.Collection,
-						"DISTANCE", "FENCE", "DETECT", "exit", "COMMANDS", "set", "POINT", lat, lon, meter}, " ")
-			} else {
-				panic("never come here!")
-			}
-
-			s.log.Info("updateDispatch SETHOOK",
-				zap.String("detect", i.Detect),
-				zap.String("hook", hook))
-
-			//执行如下操作：
-			//- 设置HOOK。
-			//- 清除OBU历史GPS记录。
-			//- 设置过期时间触发。
-			if i.Detect == string(ENTER) {
-				if _, err := enter.Do("SETHOOK",
+		//命令字符串
+		var hook string
+		key := i.Obuid + ":" + i.TaskId
+		if i.Detect == string(ENTER) {
+			hook = strings.Join(
+				[]string{"SETHOOK",
 					key,
 					s.cf.EnterFenced.PubPoint,
 					"NEARBY",
 					s.cf.EnterFenced.Collection,
-					"DISTANCE", "FENCE", "DETECT", "enter", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.Meter);
-					err != nil {
-					s.log.Warn("updateDispatch SETHOOK ENTER error",
-						zap.Error(err), zap.String("hook", hook),
-						zap.String("dispatch", i.Json()))
-					return err
-				}
-
-				if _, err := enter.Do("DEL", s.cf.EnterFenced.Collection, i.Obuid); err != nil {
-					s.log.Warn("updateDispatch DEL ENTER error",
-						zap.Error(err),
-						zap.String("collection", s.cf.EnterFenced.Collection),
-						zap.String("obuid", i.Obuid),
-						zap.String("dispatch", i.Json()))
-					return err
-				}
-
-				s.enterCache.SetWithTTL(key, i, i.InvalidTime.Sub(time.Now()))
-			} else if i.Detect == string(EXIT) {
-				if _, err := exit.Do("SETHOOK",
+					"DISTANCE", "FENCE", "DETECT", "enter", "COMMANDS", "set", "POINT", lat, lon, meter}, " ")
+		} else if i.Detect == string(EXIT) {
+			hook = strings.Join(
+				[]string{"SETHOOK",
 					key,
 					s.cf.ExitFenced.PubPoint,
 					"NEARBY",
-					s.cf.ExitFenced.Collection,
-					"DISTANCE", "FENCE", "DETECT", "exit", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.Meter);
-					err != nil {
-					s.log.Warn("updateDispatch SETHOOK EXIT error",
-						zap.Error(err), zap.String("hook", hook),
-						zap.String("dispatch", i.Json()))
-					return err
-				}
+					s.cf.EnterFenced.Collection,
+					"DISTANCE", "FENCE", "DETECT", "exit", "COMMANDS", "set", "POINT", lat, lon, meter}, " ")
+		} else {
+			panic("never come here!")
+		}
 
-				if _, err := enter.Do("DEL", s.cf.ExitFenced.Collection, i.Obuid); err != nil {
-					s.log.Warn("updateDispatch DEL EXIT error",
-						zap.Error(err),
-						zap.String("collection", s.cf.ExitFenced.Collection),
-						zap.String("obuid", i.Obuid),
-						zap.String("dispatch", i.Json()))
-					return err
-				}
+		s.log.Info("updateDispatch SETHOOK",
+			zap.String("detect", i.Detect),
+			zap.String("hook", hook))
 
-				s.exitCache.SetWithTTL(key, i, i.InvalidTime.Sub(time.Now()))
-			} else {
-				panic("never come here!")
+		//执行如下操作：
+		//- 设置HOOK。
+		//- 清除OBU历史GPS记录。
+		//- 设置过期时间触发。
+		if i.Detect == string(ENTER) {
+			if _, err := enter.Do("SETHOOK",
+				key,
+				s.cf.EnterFenced.PubPoint,
+				"NEARBY",
+				s.cf.EnterFenced.Collection,
+				"DISTANCE", "FENCE", "DETECT", "enter", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.Meter);
+				err != nil {
+				s.log.Warn("updateDispatch SETHOOK ENTER error",
+					zap.Error(err), zap.String("hook", hook),
+					zap.String("dispatch", i.Json()))
+				return err
 			}
+
+			if _, err := enter.Do("DEL", s.cf.EnterFenced.Collection, i.Obuid); err != nil {
+				s.log.Warn("updateDispatch DEL ENTER error",
+					zap.Error(err),
+					zap.String("collection", s.cf.EnterFenced.Collection),
+					zap.String("obuid", i.Obuid),
+					zap.String("dispatch", i.Json()))
+				return err
+			}
+
+			s.enterCache.SetWithTTL(key, i, i.InvalidTime.Sub(time.Now()))
+		} else if i.Detect == string(EXIT) {
+			if _, err := exit.Do("SETHOOK",
+				key,
+				s.cf.ExitFenced.PubPoint,
+				"NEARBY",
+				s.cf.ExitFenced.Collection,
+				"DISTANCE", "FENCE", "DETECT", "exit", "COMMANDS", "set", "POINT", i.Lat, i.Lon, i.Meter);
+				err != nil {
+				s.log.Warn("updateDispatch SETHOOK EXIT error",
+					zap.Error(err), zap.String("hook", hook),
+					zap.String("dispatch", i.Json()))
+				return err
+			}
+
+			if _, err := enter.Do("DEL", s.cf.ExitFenced.Collection, i.Obuid); err != nil {
+				s.log.Warn("updateDispatch DEL EXIT error",
+					zap.Error(err),
+					zap.String("collection", s.cf.ExitFenced.Collection),
+					zap.String("obuid", i.Obuid),
+					zap.String("dispatch", i.Json()))
+				return err
+			}
+
+			s.exitCache.SetWithTTL(key, i, i.InvalidTime.Sub(time.Now()))
+		} else {
+			panic("never come here!")
 		}
 	}
 

@@ -227,7 +227,7 @@ func (s *Server) Run() error {
 
 	s.log.Info("busfenced startup", zap.String("version", version.String("busfenced")))
 
-	errchan := make(chan error, 1)
+	errchan := make(chan error)
 
 	//进围栏事件存储
 	go func() {
@@ -546,6 +546,9 @@ func (endpoint *RedisPubpoint) parsePubpoint(s string) error {
 func (s *Server) Close() error {
 	errmsg := []string{}
 
+	close(s.chanGPS)
+	close(s.chanDispatch)
+
 	if err := s.log.Sync(); err != nil {
 		errmsg = append(errmsg, err.Error())
 	}
@@ -565,8 +568,6 @@ func (s *Server) Close() error {
 	if err := s.exit.Close(); err != nil {
 		errmsg = append(errmsg, err.Error())
 	}
-
-	s.enterCache.Purge()
 
 	if len(errmsg) > 0 {
 		return fmt.Errorf(strings.Join(errmsg, "\n"))

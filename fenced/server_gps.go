@@ -88,30 +88,29 @@ func (s *Server) updateGPS() error {
 	exit := s.exit.Get()
 	defer exit.Close()
 
-	for {
-		for i := range s.chanGPS {
-			bs, err := s.mkGeojson("POINT", *i)
-			if err != nil {
-				s.log.Warn("updateGPS mkGeojson error", zap.Error(err),
-					zap.String("gps", i.Json()))
-				continue
-			}
+	for i := range s.chanGPS {
+		//追加geo属性
+		bs, err := s.mkGeojson("POINT", *i)
+		if err != nil {
+			s.log.Warn("updateGPS mkGeojson error", zap.Error(err),
+				zap.String("gps", i.Json()))
+			continue
+		}
 
-			if _, err := enter.Do("SET", s.cf.EnterFenced.Collection, i.Obuid,
-				"OBJECT", string(bs)); err != nil {
-				s.log.Warn("updateGPS SET enter fenced error",
-					zap.Error(err),
-					zap.String("gps", i.Json()))
-				return err
-			}
+		if _, err := enter.Do("SET", s.cf.EnterFenced.Collection, i.Obuid,
+			"OBJECT", string(bs)); err != nil {
+			s.log.Warn("updateGPS SET enter fenced error",
+				zap.Error(err),
+				zap.String("gps", i.Json()))
+			return err
+		}
 
-			if _, err := exit.Do("SET", s.cf.ExitFenced.Collection, i.Obuid,
-				"OBJECT", string(bs)); err != nil {
-				s.log.Warn("updateGPS SET exit fenced error",
-					zap.Error(err),
-					zap.String("gps", i.Json()))
-				return err
-			}
+		if _, err := exit.Do("SET", s.cf.ExitFenced.Collection, i.Obuid,
+			"OBJECT", string(bs)); err != nil {
+			s.log.Warn("updateGPS SET exit fenced error",
+				zap.Error(err),
+				zap.String("gps", i.Json()))
+			return err
 		}
 	}
 
