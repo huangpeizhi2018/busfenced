@@ -1,4 +1,6 @@
 .idea
 go.sum
-busfenced
-busfenced.exe
+cmd/busfenced/busfenced
+cmd/busfenced/busfenced.exe
+docs/*.log
+docs/*.0
