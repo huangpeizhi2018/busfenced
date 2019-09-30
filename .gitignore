@@ -1,6 +1,8 @@
 .idea
+.vscode
 go.sum
 cmd/busfenced/busfenced
 cmd/busfenced/busfenced.exe
 docs/*.log
 docs/*.0
+vendor/*
