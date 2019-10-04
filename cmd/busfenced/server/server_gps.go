@@ -1,10 +1,11 @@
-package fenced
+package server
 
 import (
 	"math"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
+	"github.com/huangpeizhi2018/busfenced/cmd/busfenced/msg"
 	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
 )
@@ -44,7 +45,7 @@ func (s *Server) fetchGPS() error {
 			continue
 		}
 
-		m := GPS{
+		m := msg.GPS{
 			Obuid:     gjson.Get(jstr, "obuid").String(),
 			Lat:       lat,
 			Lon:       lon,

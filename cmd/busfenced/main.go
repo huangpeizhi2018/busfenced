@@ -4,7 +4,8 @@ import (
 	"flag"
 	"os"
 
-	"github.com/huangpeizhi2018/busfenced/fenced"
+	"github.com/huangpeizhi2018/busfenced/cmd/busfenced/config"
+	"github.com/huangpeizhi2018/busfenced/cmd/busfenced/server"
 	"github.com/influxdata/pidfile"
 	"go.uber.org/zap"
 )
@@ -22,37 +23,46 @@ func main() {
 	}
 
 	if b := checkFileExist(confn); !b {
-		log.Info("busfenced check config file not exist", zap.String("confn", confn))
+		log.Info("busfenced check config file not exist",
+			zap.String("confn", confn))
 		return
 	}
 
 	var err error
 
 	//加载分析配置文件
-	cf, err := fenced.NewCf(confn)
+	cf, err := config.New(confn)
 	if err != nil {
-		log.Warn("busfenced load config failure", zap.String("confn", confn), zap.Error(err))
+		log.Warn("busfenced load config failure",
+			zap.String("confn", confn),
+			zap.Error(err))
 		return
 	}
 
+	cf.Save(os.Stdout)
+
 	pid, err := pidfile.New(cf.PidFile)
 	if err != nil {
-		log.Warn("busfenced create pidfile failure", zap.String("pidfile", cf.PidFile), zap.Error(err))
+		log.Warn("busfenced create pidfile failure",
+			zap.String("pidfile", cf.PidFile),
+			zap.Error(err))
 		return
 	}
 
 	defer pid.Close()
 
 	//分析服务
-	server, err := fenced.NewServer(cf)
+	s, err := server.New(cf)
 	if err != nil {
-		log.Warn("busfenced server initialize failure", zap.Error(err))
+		log.Warn("busfenced server initialize failure",
+			zap.Error(err))
 		return
 	}
-	defer server.Close()
+	defer s.Close()
 
-	if err := fenced.Run(server); err != nil {
-		log.Warn("busfenced server abnormal exit", zap.Error(err))
+	if err := server.Run(s); err != nil {
+		log.Warn("busfenced server abnormal exit",
+			zap.Error(err))
 		return
 	}
 }

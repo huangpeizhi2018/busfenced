@@ -1,9 +1,11 @@
-package fenced
+package server
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"strings"
+
+	"github.com/huangpeizhi2018/busfenced/cmd/busfenced/msg"
+	"go.uber.org/zap"
 
 	geojson "github.com/paulmach/go.geojson"
 )
@@ -28,7 +30,7 @@ func (s *Server) checkMeter(meter float64) bool {
 }
 
 //gps点转换为geojson对象格式，并添加“附加属性”
-func (s *Server) mkGeojson(ty string, i GPS) ([]byte, error) {
+func (s *Server) mkGeojson(ty string, i msg.GPS) ([]byte, error) {
 	var g *geojson.Geometry
 
 	switch ty {

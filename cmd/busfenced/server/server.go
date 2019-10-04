@@ -1,4 +1,4 @@
-package fenced
+package server
 
 import (
 	"fmt"
@@ -11,7 +11,9 @@ import (
 
 	"github.com/ReneKroon/ttlcache"
 	"github.com/gomodule/redigo/redis"
-	"github.com/huangpeizhi2018/busfenced/fenced/version"
+	"github.com/huangpeizhi2018/busfenced/cmd/busfenced/config"
+	"github.com/huangpeizhi2018/busfenced/cmd/busfenced/msg"
+	"github.com/huangpeizhi2018/busfenced/pkg"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"go.uber.org/zap"
@@ -25,15 +27,15 @@ const (
 )
 
 type Server struct {
-	cf *Conf
+	cf *config.Conf
 
 	sp    *redis.Pool //redis数据源
 	tp    *redis.Pool //redis结果数据输出
 	enter *redis.Pool //tile38
 	exit  *redis.Pool //tile38
 
-	chanGPS      chan *GPS
-	chanDispatch chan *Dispatch
+	chanGPS      chan *msg.GPS
+	chanDispatch chan *msg.Dispatch
 
 	enterCache *ttlcache.Cache
 	exitCache  *ttlcache.Cache
@@ -43,11 +45,11 @@ type Server struct {
 }
 
 //新建服务
-func NewServer(c *Conf) (*Server, error) {
+func New(c *config.Conf) (*Server, error) {
 	s := &Server{
 		cf:           c,
-		chanGPS:      make(chan *GPS, c.ChanLen),
-		chanDispatch: make(chan *Dispatch, c.ChanLen),
+		chanGPS:      make(chan *msg.GPS, c.ChanLen),
+		chanDispatch: make(chan *msg.Dispatch, c.ChanLen),
 		start:        time.Now(),
 	}
 
@@ -94,7 +96,7 @@ func NewServer(c *Conf) (*Server, error) {
 	//进围栏服务
 	enterExpirationCallback := func(key string, value interface{}) {
 		s.log.Info("clean ENTER/fenced HOOKS  and obuid/lat/lon, dispatch expires",
-			zap.String(key, value.(*Dispatch).Json()))
+			zap.String(key, value.(*msg.Dispatch).Json()))
 
 		obuid, _, valid := parseHook(key)
 		if !valid {
@@ -122,7 +124,7 @@ func NewServer(c *Conf) (*Server, error) {
 	//出围栏服务
 	exitExpirationCallback := func(key string, value interface{}) {
 		s.log.Info("clean EXIT/fenced HOOKS and obuid/lat/lon, dispatch expires, ",
-			zap.String(key, value.(*Dispatch).Json()))
+			zap.String(key, value.(*msg.Dispatch).Json()))
 
 		obuid, _, valid := parseHook(key)
 		if !valid {
@@ -225,7 +227,7 @@ func (s *Server) setRedis(server string, password string, db int, maxidle int) (
 func (s *Server) Run() error {
 	defer s.Close()
 
-	s.log.Info("busfenced startup", zap.String("version", version.String("busfenced")))
+	s.log.Info("busfenced startup", zap.String("version", pkg.Version(s.cf.Service)))
 
 	errchan := make(chan error)
 

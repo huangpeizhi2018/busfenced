@@ -1,4 +1,4 @@
-package fenced
+package server
 
 import (
 	"strconv"
@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
+	"github.com/huangpeizhi2018/busfenced/cmd/busfenced/msg"
 	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
 )
@@ -80,7 +81,7 @@ func (s *Server) fetchDispatch() error {
 			continue
 		}
 
-		m := Dispatch{
+		m := msg.Dispatch{
 			Obuid:       gjson.Get(jstr, "obuId").String(),
 			Lat:         lat,
 			Lon:         lon,

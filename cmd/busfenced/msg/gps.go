@@ -1,4 +1,4 @@
-package fenced
+package msg
 
 import (
 	"encoding/json"

@@ -1,4 +1,4 @@
-package fenced
+package config
 
 import (
 	"fmt"
@@ -89,7 +89,7 @@ type ZLog struct {
 }
 
 //加载配置
-func NewCf(filename string) (*Conf, error) {
+func New(filename string) (*Conf, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err
