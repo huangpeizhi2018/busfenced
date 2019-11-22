@@ -61,16 +61,14 @@ func New(c *config.Conf) (*Server, error) {
 	if s.sp, err = s.setRedis(net.JoinHostPort(s.cf.Source.Addr, s.cf.Source.Port),
 		s.cf.Source.Passwd,
 		0,
-		s.cf.Source.MaxIdel);
-		err != nil {
+		s.cf.Source.MaxIdel); err != nil {
 		return nil, err
 	}
 
 	if s.tp, err = s.setRedis(net.JoinHostPort(s.cf.Target.Addr, s.cf.Target.Port),
 		s.cf.Target.Passwd,
 		0,
-		s.cf.Target.MaxIdel);
-		err != nil {
+		s.cf.Target.MaxIdel); err != nil {
 		return nil, err
 	}
 
@@ -507,28 +505,29 @@ func (s *Server) eventDump(ft FenceType) error {
 //分析REDIS事件发布点的URL，形成Endpoint结构。
 //Redis URL示例 redis://127.0.0.1:6390/pub-enterfenced
 func (endpoint *RedisPubpoint) parsePubpoint(s string) error {
-	rawUrl := s
+	rawURL := s
+
 	if !strings.HasPrefix(s, "redis:") {
-		return fmt.Errorf("endpoint protocol error, url [%s]", rawUrl)
+		return fmt.Errorf("endpoint protocol error, url [%s]", rawURL)
 	}
 
 	s = s[strings.Index(s, ":")+1:]
 	if !strings.HasPrefix(s, "//") {
-		return fmt.Errorf("missing the two slashes, url [%s]", rawUrl)
+		return fmt.Errorf("missing the two slashes, url [%s]", rawURL)
 	}
 
 	sqp := strings.Split(s[2:], "?")
 	sp := strings.Split(sqp[0], "/")
 	s = sp[0]
 	if s == "" {
-		return fmt.Errorf("missing host, url [%s]", rawUrl)
+		return fmt.Errorf("missing host, url [%s]", rawURL)
 	}
 
 	dp := strings.Split(s, ":")
 	endpoint.Host = dp[0]
 	_, err := strconv.ParseUint(dp[1], 10, 16)
 	if err != nil {
-		return fmt.Errorf("invalid redis url port, url [%s]")
+		return fmt.Errorf("invalid redis url port, url [%s]", rawURL)
 	}
 	endpoint.Port = dp[1]
 
@@ -536,10 +535,10 @@ func (endpoint *RedisPubpoint) parsePubpoint(s string) error {
 		var err error
 		endpoint.Channel, err = url.QueryUnescape(sp[1])
 		if err != nil {
-			return fmt.Errorf("invalid redis channel name, [%s]", rawUrl)
+			return fmt.Errorf("invalid redis channel name, [%s]", rawURL)
 		}
 	} else {
-		return fmt.Errorf("missing redis channel name, [%s]", rawUrl)
+		return fmt.Errorf("missing redis channel name, [%s]", rawURL)
 	}
 
 	return nil
